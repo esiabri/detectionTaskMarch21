@@ -287,6 +287,7 @@ StimCounter = 0;
 hitCounter = 0;
 missedCounter = 0;
 FA_counter = 0;
+CR_counter = 0;
 extendedITT_trialsCounter = 0;
 waitPeriodLickCounter = 0;
 waitPeriodTotalTime = 0;
@@ -490,9 +491,14 @@ for trialNo=1:totalTrialNo
         extendedITT_trialsCounter = extendedITT_trialsCounter + 1;
         if FA_flag 
             FA_counter = FA_counter + 1;
+            disp(' ');
+            disp(['FA: ', num2str(FA_counter), ' / ', num2str(extendedITT_trialsCounter)]);
+            
+        else
+            CR_counter = CR_counter + 1;
+            disp(['CR: ', num2str(CR_counter), ' / ', num2str(extendedITT_trialsCounter)]);
         end
-        disp(' ');
-        disp(['FA: ', num2str(FA_counter), ' / ', num2str(extendedITT_trialsCounter)]);
+        
         
     end
 
@@ -562,6 +568,7 @@ disp(' ');
 disp(['Hit: ', num2str(hitCounter), ' / ', num2str(StimCounter)]);
 disp(['Miss: ', num2str(missedCounter), ' / ', num2str(StimCounter)]);
 disp(['FA: ', num2str(FA_counter), ' / ', num2str(extendedITT_trialsCounter)]);
+disp(['CR: ', num2str(CR_counter), ' / ', num2str(extendedITT_trialsCounter)]);
 disp(' ');
 disp(['Total Reward: ', num2str(earnedRewardVolTotal),'uL in ', num2str(floor((GetSecs()-startRecTime)/60)), ' minutes']);
 disp(' ');
