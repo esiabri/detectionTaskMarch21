@@ -78,7 +78,7 @@ exactRewardValue = totalSteps*volPerRevolution_uL/800;
 
 % we can change it based on how fast the reward seems to be delivered and
 % how load is the pump
-waitBetweenPulses = 0.0025; % 2.5 ms off and 2.5 ms on periods, based on what seems to be used with Soyoun to deliver 4 microL in 200 ms
+waitBetweenPulses = 0.001; % 2.5 ms off and 2.5 ms on periods, based on what seems to be used with Soyoun to deliver 4 microL in 200 ms
 
 for loop=1:totalSteps
     
