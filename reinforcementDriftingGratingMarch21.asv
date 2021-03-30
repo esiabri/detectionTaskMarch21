@@ -490,7 +490,7 @@ for trialNo=1:totalTrialNo
         extendedITT_trialsCounter = extendedITT_trialsCounter + 1;
         if FA_flag 
             FA_counter = FA_counter + 1;
-        end
+            end
         disp(' ');
         disp(['FA: ', num2str(FA_counter), ' / ', num2str(extendedITT_trialsCounter)]);
         
