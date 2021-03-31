@@ -404,10 +404,6 @@ for trialNo=1:totalTrialNo
             end
         end
     end
-    
-    if FA_flag 
-        FA_counter = FA_counter + 1;
-    end
         
 
     StimCounter = StimCounter + 1;
