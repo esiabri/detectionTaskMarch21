@@ -590,7 +590,7 @@ fid2 = fopen(binFile,'r');
 [data,count] = fread(fid2,[5,inf],'double');
 fclose(fid2);
 
-figure()
+% figure()
 t = data(1,:);
 ch = data(2:5,:);
 
