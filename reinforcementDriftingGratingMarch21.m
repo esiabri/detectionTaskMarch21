@@ -44,6 +44,9 @@ dataFolderName = 'Mouse' + string(mouseNumber) + '_' + datestr(date,'mm-dd-yyyy'
 mkdir(localDirectory,dataFolderName);
 dataFolderAdd = string(localDirectory) + '\' + dataFolderName;
 
+slackNotifAddEhsan = 'https://hooks.slack.com/services/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';
+
+
 %% disable the sync check in the psychtoolbox
 Screen('Preference', 'SkipSyncTests', 1);
 
@@ -325,7 +328,7 @@ stimVector = stimVector(randperm(length(stimVector)));
 % Changed code 07/10/20
 % rewardStepMotorEnable.outputSingleScan(0);
 deliverRewardMarch21(earnedRewardVol,syringeVol,rewardStepMotorCtl1); %<- use in case there is a error in this line 
-%% Session Trials START
+%% Session Trials
 
 KbWait;
 startRecTime = GetSecs();
@@ -532,9 +535,13 @@ for trialNo=1:totalTrialNo
     waitPeriodLickCounter = waitPeriodLickCounter + trialWaitPeriodLickCounter;
     
 end  
-%%
+%% stop the recording
 FinalTime = num2str(floor((GetSecs()-startRecTime)/60));
 sessionEndTime = now;
+
+% notification to the experimenter to enable trigger in camera setting to stop frame recording 
+
+SendSlackNotification(slackNotifAddEhsan,strcat('box ',num2str(boxNumber),' is done!'));
 
 %Stop the recording
 disp('Saving the session...')
@@ -555,7 +562,7 @@ fclose(fid1);
 
 
 
-%Saving the variables of the session and the code file in the recording
+%% Saving the variables of the session and the code file in the recording
 %directory
 save(dataFolderAdd + '\' + 'workspaceVariables');
 copyfile(string(mfilename('fullpath')) + '.m', dataFolderAdd);
@@ -572,7 +579,8 @@ disp(['lick rate during wait period: ', num2str(waitPeriodLickCounter/waitPeriod
 disp(' ');
 disp(['Finish Time: ', datestr(sessionEndTime,'HH:MM:SS.FFF')])
 
-%reading the recorded data
+
+%% reading the recorded analog data file
 fid2 = fopen(binFile,'r');
 % testData = fread(fid2,'double');
 [data,count] = fread(fid2,[5,inf],'double');
@@ -581,58 +589,192 @@ fclose(fid2);
 figure()
 t = data(1,:);
 ch = data(2:5,:);
-% LickSensorCh = data(3,:);
-% StimOnset = data(7,:);
-% Var2 = data(2,:);
-% Var3 = data(3,:);
-% Var4 = data(4,:);
-% Var5 = data(5,:);
-% Var6 = data(6,:);
-% Var7 = data(7,:);
-% Var8 = data(8,:);
-% Var9 = data(9,:);
 
 save(dataFolderAdd + '\' + 'workspaceVariables');
 copyfile(string(mfilename('fullpath')) + '.m', dataFolderAdd);
 
-% temp = ch(1,:);
-% temp(temp<4)=0;
-% ch(1,:)=temp;
-% 
-% temp = ch(5,:);
-% temp(temp<4)=0;
-% ch(5,:)=temp;
-
 figure()
 plot(t, ch);
 
-% figure()
-% tiledlayout(5,2)
-% nexttile
-% plot(t, Var2);
-% title('Var2')
-% nexttile
-% plot(t, Var3);
-% title('LickSensor')
-% nexttile
-% plot(t, Var4);
-% title('Var4')
-% nexttile
-% plot(t, Var5);
-% title('Var5')
-% nexttile
-% plot(t, Var6);
-% title('Var6')
-% nexttile
-% plot(t, Var7);
-% title('StimOnset')
-% nexttile
-% plot(t, Var8);
-% title('Airpuff Signal')
-% nexttile
-% plot(t, Var9);
-% title('CamSignal')
-% nexttile
-% plot(t, ch);
-% title('All')
-% movegui('south');
+%% lick response based on the stim start detected by photodiode sensor
+
+lickSensor = ch(2,:);
+%getting rid of the noise
+lickSensor(lickSensor<2)=0;
+lickSensor(lickSensor>2)=1;
+
+lickSensorDiff = [0 lickSensor(2:end)-lickSensor(1:end-1)];
+lickTimes = t(find(lickSensorDiff==1));
+
+photoDiodeSig = ch(1,:);
+
+% plot(movMeanPhotoDiodeSignal);
+
+movMeanPhotoDiodeSignal = photoDiodeSig;
+% movMeanPhotoDiodeSignal = movmean(photoDiodeSig,100);
+% movMeanPhotoDiodeSignal = movmean(movMeanPhotoDiodeSignal,100);
+% movMeanPhotoDiodeSignal = movmean(movMeanPhotoDiodeSignal,50);
+% movMeanPhotoDiodeSignal = movmean(movMeanPhotoDiodeSignal,50);
+
+% finding the peaks of the bimodal distribution of the values in the
+% photodiode signal to determine the cut level and get the start time of
+% the visual stimulus
+[idx,Centers] = kmeans(movMeanPhotoDiodeSignal',2);
+
+cutLevel = (Centers(1) + Centers(2))/2;
+% bar(histCenters,histCounts);
+%getting rid of the noise
+movMeanPhotoDiodeSignal(movMeanPhotoDiodeSignal<cutLevel)=0;
+movMeanPhotoDiodeSignal(movMeanPhotoDiodeSignal>cutLevel)=1;
+
+stimPhotodiodeDiff = [0 movMeanPhotoDiodeSignal(2:end)-movMeanPhotoDiodeSignal(1:end-1)];
+stimStartPhotodiode = t(find(stimPhotodiodeDiff==1));
+stimStopPhotodiode = t(find(stimPhotodiodeDiff==-1));
+
+% if data starts with high photodiode level, getting rid of the first stop
+if stimStopPhotodiode(1) < stimStartPhotodiode(1)
+    stimStopPhotodiode = stimStopPhotodiode(2:end);
+end
+
+% if data ends with high level photodiode, getting rid of the last start
+if length(stimStopPhotodiode) ~= length(stimStartPhotodiode)
+    stimStartPhotodiode = stimStartPhotodiode(1:end-1);
+end
+
+% calculate the duration of each detected stim
+if length(stimStopPhotodiode) == length(stimStartPhotodiode)
+    stimDur = stimStopPhotodiode - stimStartPhotodiode;
+else
+    disp('photo diode signal can not be interepreted to calc the stim start time')
+end
+    
+% dropping the fluctutations due to over hearing of the other channels by
+% checking the length of the stimDur
+minimumExpectedStimDur = 1;
+stimStartPhotodiode = stimStartPhotodiode(stimDur>minimumExpectedStimDur);
+
+if stimStartPhotodiode ~= StimCounter
+    disp('the number of stimuli detected on the photodiode is not matching the presented stimuli');
+end
+
+
+windowBeforeStimStart = 3;
+windowAfterStimStart = 5;
+
+stimLockedLickTimesAllTrials = [];
+firstLickAfterStimAllTrials = [];
+
+maxTimeToLookForTheFirstLick = windowAfterStimStart;
+
+for stimCounter=1:size(stimStartPhotodiode,2)
+    
+    stimLockedLickTimes = lickTimes(lickTimes>(stimStartPhotodiode(stimCounter)-windowBeforeStimStart) & lickTimes<(stimStartPhotodiode(stimCounter)+windowAfterStimStart)) - stimStartPhotodiode(stimCounter);
+    
+    firstLickAfterStim = lickTimes(lickTimes>stimStartPhotodiode(stimCounter) & lickTimes<(stimStartPhotodiode(stimCounter)+windowAfterStimStart)) - stimStartPhotodiode(stimCounter);
+    
+    firstLickAfterStim = firstLickAfterStim(firstLickAfterStim<maxTimeToLookForTheFirstLick);
+    if size(firstLickAfterStim)
+        firstLickAfterStim = firstLickAfterStim(1);
+    else
+        firstLickAfterStim = double.empty(1,0);
+    end
+        
+    stimLockedLickTimesAllTrials = [stimLockedLickTimesAllTrials stimLockedLickTimes];
+    firstLickAfterStimAllTrials = [firstLickAfterStimAllTrials firstLickAfterStim];
+end
+
+histStep = 0.05;
+windowStartBeforeStim = windowBeforeStimStart;
+histBins = (-windowStartBeforeStim:histStep:windowAfterStimStart)+histStep/2;
+
+figure()
+hist(stimLockedLickTimesAllTrials,histBins)
+title(strcat('distribution for the time of the all licks'));
+
+histStep = 0.05;
+windowStartBeforeStim = 1;
+windowAfterStimStart = maxTimeToLookForTheFirstLick;
+histBins = (-windowStartBeforeStim:histStep:windowAfterStimStart)+histStep/2;
+
+colorVec = ["#4569D3","#97D345","#D3C845","#D38145","#D34550"];
+
+figure()
+[histCounts,histCenters] = hist(firstLickAfterStimAllTrials,histBins);
+
+bar(histCenters,histCounts,1,'FaceColor',colorVec(1),'EdgeColor','none');
+title(strcat('distribution for the time of the first lick'));
+
+xlabel('time from stim start (seconds)');
+
+yl = ylim;
+text(0.5*maxTimeToLookForTheFirstLick,yl(2)*0.75,['median delay: ',num2str(round(1000*median(firstLickAfterStimAllTrials))),' ms'])
+
+hold on
+plot([0 StimDuration],[yl(2)*0.9 yl(2)*0.9],'k','linewidth',2)
+%% update the data base for the animal
+
+% load the data base for the animal
+defaultPath = 'D:\animalsMatFiles';
+
+animalMatDataFileAdd = strcat(defaultPath,'\',num2str(mouseNumber),'.mat');
+load(animalMatDataFileAdd)
+
+Date = [Date, string(date)];
+weightYesterday = [weightYesterday, str2double(MouseWeight)];
+addWaterYesterday = [addWaterYesterday, addWater];
+trainingStage = [trainingStage, string(stageOfTraining)];
+hitCountReinforceStatic = [hitCountReinforceStatic, []];  % add empty vectors for the days without data for this item
+stimCountReinforceStatic = [stimCountReinforceStatic, []];
+hitCountDetectionStatic = [hitCountDetectionStatic, []];
+stimCountDetectionStatic = [stimCountDetectionStatic, []];
+hitCountReinforceDrifting = [hitCountReinforceDrifting, hitCounter];
+stimCountReinforceDrifting = [stimCountReinforceDrifting, StimCounter];
+hitCountDetectionDrifting = [hitCountDetectionDrifting, []];
+stimCountDetectionDrifting = [stimCountDetectionDrifting, []];
+hitCountContrastLearningStatic = [hitCountContrastLearningStatic, []];
+stimCountContrastLearningStatic = [stimCountContrastLearningStatic, []];
+hitCountContrastLearningDrifting = [hitCountContrastLearningDrifting, []];
+stimCountContrastLearningDrifting = [stimCountContrastLearningDrifting, []];
+firstLickDistReinforceStatic = [firstLickDistReinforceStatic, []];
+firstLickDistDetectionStatic = [firstLickDistDetectionStatic, []];
+firstLickDistReinforceDrifting = [firstLickDistReinforceDrifting, firstLickAfterStimAllTrials];
+firstLickDistDetectionDrifting = [firstLickDistDetectionDrifting, []];
+firstLickDistContrastLearningStatic = [firstLickDistContrastLearningStatic, []];
+firstLickDistContrastLearningDrifting = [firstLickDistContrastLearningDrifting, []];
+totalTodayReward = [totalTodayReward, earnedRewardVolTotal];
+FA_countReinforceStatic = [FA_countReinforceStatic,[]];
+FA_countDetectionStatic = [FA_countDetectionStatic,[]];
+FA_countReinforceDrifting = [FA_countReinforceDrifting, FA_counter];
+FA_countDetectionDrifting = [FA_countDetectionDrifting,[]];
+extendedStimCountReinforceStatic = [extendedStimCountReinforceStatic,[]];
+extendedStimCountDetectionStatic = [extendedStimCountDetectionStatic,[]];
+extendedStimCountReinforceDrifting = [extendedStimCountReinforceDrifting, extendedITT_trialsCounter];
+extendedStimCountDetectionDrifting = [extendedStimCountDetectionDrifting,[]];
+
+save(animalMatDataFileAdd,'Date','weightYesterday','addWaterYesterday','trainingStage','hitCountReinforceStatic',...
+    'stimCountReinforceStatic','hitCountDetectionStatic','stimCountDetectionStatic',...
+    'hitCountReinforceDrifting','stimCountReinforceDrifting','hitCountDetectionDrifting','stimCountDetectionDrifting',...
+    'hitCountContrastLearningStatic','stimCountContrastLearningStatic','hitCountContrastLearningDrifting','stimCountContrastLearningDrifting',...
+    'firstLickDistReinforceStatic',...
+    'firstLickDistDetectionStatic','firstLickDistReinforceDrifting','firstLickDistDetectionDrifting',...
+    'firstLickDistContrastLearningStatic','firstLickDistContrastLearningDrifting','totalTodayReward',...
+    'mouseInitialWeight','FA_countReinforceStatic','FA_countDetectionStatic','FA_countReinforceDrifting',...
+    'FA_countDetectionDrifting','extendedStimCountReinforceStatic','extendedStimCountDetectionStatic',...
+    'extendedStimCountReinforceDrifting','extendedStimCountDetectionDrifting','-append');
+
+
+
+% % load the saved file
+% 
+% [fileName,pathToFile] = uigetfile(defaultPath);
+% dataFileAdd = strcat(pathToFile,fileName);
+% 
+% load(dataFileAdd)
+% 
+% newVar = [];
+% save(dataFileAdd,'newVar','-append')
+
+
+
+%% generate the plots and replace on the google drive
+
