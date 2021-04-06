@@ -653,7 +653,7 @@ end
 minimumExpectedStimDur = 1;
 stimStartPhotodiode = stimStartPhotodiode(stimDur>minimumExpectedStimDur);
 
-if stimStartPhotodiode ~= StimCounter
+if length(stimStartPhotodiode) ~= StimCounter
     disp('the number of stimuli detected on the photodiode is not matching the presented stimuli');
 end
 
@@ -720,7 +720,7 @@ animalMatDataFileAdd = strcat(defaultPath,'\',num2str(mouseNumber),'.mat');
 load(animalMatDataFileAdd)
 
 Date = [Date, string(date)];
-weightYesterday = [weightYesterday, str2double(MouseWeight)];
+weightYesterday = [weightYesterday, string(MouseWeight)];
 addWaterYesterday = [addWaterYesterday, addWater];
 trainingStage = [trainingStage, string(stageOfTraining)];
 hitCountReinforceStatic = [hitCountReinforceStatic, []];  % add empty vectors for the days without data for this item
