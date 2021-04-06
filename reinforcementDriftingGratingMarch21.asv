@@ -545,7 +545,7 @@ sessionEndTime = now;
 
 % notification to the experimenter to enable trigger in camera setting to stop frame recording 
 
-SendSlackNotification(slackNotifAddEhsan,strcat('box ',num2str(boxNumber),' is done!'));
+SendSlackNotification(slackNotifAddEhsan,strcat('box ',num2str(1),' is done!'));
 
 %Stop the recording
 disp('Saving the session...')
