@@ -1,19 +1,19 @@
 clear all
 close all 
 
-stageOfTraining = 'Reinforcement';
+stageOfTraining = 'Detection';
 
-% Detection Task. Code for reinforcement.
-% GOAL = The mouse collect the reward after the stimulus presentation.
+  
+Screen('Preference', 'SkipSyncTests', 1);
+
+% Detection Task. The final code for detection.
+% GOAL = The mouse should lick the spout during the stimulus presentation to get the reward.
 % STRUCTURE = The animal will be presented with visual stimulus trials for
-% 1.5 second, 500-ms after the stimulus onset 4 uL is delivered to the
-% animal. For the trial to start, animal should not lick the spout for 5 seconds in half of the trials
+% 1.5 seconds. For the trial to start, animal should not lick the spout for 5 seconds in half of the trials
 % and for 6 seconds in the other half of the trials. If animal lick the
 % spout during the last second of 6-second trials we count that trial as a
 % FA
 
-% localDirectory = 'C:\recordedData\Behavioral\Ehsan'; %this should be the address to the root of external hard drive
-% to test
 localDirectory = 'D:\recordedData\Behavioral\Ehsan';
 networkDirectory = 'Z:\recordedData\Behavioral\Ehsan'; %this is the address that the copy will be attempted at the end of the
 % of the session and also will be synced during the night with the hard
@@ -22,7 +22,7 @@ networkDirectory = 'Z:\recordedData\Behavioral\Ehsan'; %this is the address that
 networkValid = 0;
 if exist(networkDirectory, 'dir')
    networkValid = 1;   
-end 
+end  
     
 % entering session Information  
 prompt = {'Mouse Number:','Mouse Weight (Yesterday):','Additional Water (Yesterday):','Box Number:','Mouse Session Number:','Reward Vol:','Trial Numbers (even):'}; 
@@ -49,10 +49,6 @@ fileID = fopen(slackAddFile,'r');
 slackNotifAddEhsan = fscanf(fileID,'%c');
 fclose(fileID);
 % slackNotifAddEhsan = 'https://hooks.slack.com/services/T8R4YBRS8/B01SHM907M2/WCxxVFN52Q7UNt9D8X5SqgU';
-
-
-%% disable the sync check in the psychtoolbox
-Screen('Preference', 'SkipSyncTests', 1);
 
 %% Initialization of the required daq card sessions
 niDevName = 'Dev1';
@@ -249,14 +245,6 @@ gabortex = CreateProceduralGabor(window, gaborDimPixWidth, gaborDimPixHeight, []
 propertiesMat = [phase, freq, sigma, contrast, aspectRatio, 0, 0, 0];
 propertiesMatmock = [phase, freq, sigma, contrastMock, aspectRatio, 0, 0, 0];
 
-%--------------------
-heightOffsetInCM = 0;
-heightOffset = floor(heightOffsetInCM*pixelDensityCM);
-widthOffset = 0;
-
-stimHeightOffset = [0,heightOffset,0,gaborDimPixHeight+heightOffset];
-righImageHorzPos = [0,0,gaborDimPixWidth,0];
-
 %% ---------------------Camera and NI-Card Recording 
 
 % Black is the default value under the photodiode and on the screen, Flip the default screen
@@ -274,18 +262,16 @@ Screen('FillRect',window, black, patchRect);
 Screen('Flip', window);
 
 
-%%--------------------------------------------------------------------------
-
-
+%--------------------------------------------------------------------------
 %TRIAL PARAMETERS
 afterStimGrayTime = 3; %in sec
 afterStimGrayFrames = round(afterStimGrayTime/ifi);
 
  
-stimRewardDelay = 0.5; %delay between the stim presentation and sensor monitoring start time
+stimRewardDelay = 0; %delay between the stim presentation and sensor monitoring start time
 
 % Reward Volume:
-ManualRewardVol = earnedRewardVol; %in microL
+rewardVol = earnedRewardVol; %in microL
 syringeVol = 5;
 
 
@@ -315,7 +301,6 @@ rewardCompRate = 1.2;
 
 minLickContact = 0.05;
 
-
 noLickDurBeforeStim = 2; % in sec
 
 %% stimVector
@@ -329,15 +314,16 @@ stimVector = [normalTrials extendedTrials];
 stimVector = stimVector(randperm(length(stimVector)));
 
 %% Free reward at start
-% Changed code 07/10/20
-% rewardStepMotorEnable.outputSingleScan(0);
-deliverRewardMarch21(earnedRewardVol,syringeVol,rewardStepMotorCtl1); %<- use in case there is a error in this line 
+deliverRewardMarch21(earnedRewardVol,syringeVol,rewardStepMotorCtl1); 
+
 %% Session Trials
 
 KbWait;
 startRecTime = GetSecs();
 
 for trialNo=1:totalTrialNo
+% Water will be delivered if the mice stop licking for 10 consecutive trials    
+    
     
     phase = 360*rand;
     phase = 0;
@@ -350,13 +336,49 @@ for trialNo=1:totalTrialNo
         break;
     end
     
-    
-                
-% Present gray screen
+    % Present gray screen
     Screen('FillRect', window, gray);
     Screen('FillRect',window, white, patchRect);
+       
+      
+    if (find(keyCode) == 82)  %Press r to show the stim and give a reward
+            Screen('FillRect', window, gray);
+            Screen('FillRect',window, white, patchRect);
+            Screen('DrawTextures', window, gabortex, [], righImageHorzPos+stimHeightOffset, orientationPreferred, [], [], [], [],...
+            kPsychDontDoRotation, propertiesMat');
+        
+        
+            trialDigitalTagSession.outputSingleScan(1);
+            [vblStim StimulusOnsetTime FlipTimestampStim MissedStim BeamposStim] = Screen('Flip', window, cuePresTime + (1 - 0.5) * ifi);
+
+            vbl = vblStim;
+
+            for driftFrames=1:StimFrames-1
+
+                % calculating the phase of the grating in this frame based on the
+                % temporal frequency
+                phaseLine = phaseLine + degPerFrame;
+                propertiesMat(:, 1) = phaseLine';
+
+                % loading the next frame
+                Screen('FillRect', window, gray);
+                Screen('FillRect',window, black, patchRect);
+                Screen('DrawTextures', window, gabortex, [], righImageHorzPos+stimHeightOffset, orientationPreferred, [], [], [], [],...
+                        kPsychDontDoRotation, propertiesMat');
+
+                % Flip to the screen
+                vbl = Screen('Flip', window, vbl + (waitframes - 0.5) * ifi);
+
+                if (GetSecs - vblStim) > stimRewardDelay
+                    deliverRewardMarch21(earnedRewardVol,syringeVol,rewardStepMotorCtl1);
+                end
+
+
+            end
+        
+    end
     
-    
+                
 %no lick time is 5 seconds at least in all trials 
     noLickDurBeforeStim = 5;
     extendedNoLickDurBeforeStim = 1;
@@ -425,10 +447,13 @@ for trialNo=1:totalTrialNo
     trialDigitalTagSession.outputSingleScan(1);
     [vblStim StimulusOnsetTime FlipTimestampStim MissedStim BeamposStim] = Screen('Flip', window, cuePresTime + (1 - 0.5) * ifi);
 
+    % wait 0.5 seconds to give the reward
+    
     vbl = vblStim;
     
+    % In each iteration of this loop, next frame of this drifting stimulus
+    % is presented
     lickCheck = 1;
-    rewardDelivered = 0;
     for driftFrames=1:StimFrames-1
 
         % calculating the phase of the grating in this frame based on the
@@ -448,46 +473,54 @@ for trialNo=1:totalTrialNo
         if lickCheck == 1
             [lickFlag, relDetectionTime] = detectLickMarch21(waitframes*ifi, spoutSession);
             if lickFlag == 1
-%                 deliverReward(earnedRewardVol,syringeVol,rewardStepMotorCtl1,rewardStepMotorEnable);
-                lickCheck = 0;
-            end
-        end
-        
-        if rewardDelivered == 0
-            if (GetSecs - vblStim) > stimRewardDelay
                 deliverRewardMarch21(earnedRewardVol,syringeVol,rewardStepMotorCtl1);
-                rewardDelivered = 1;
+                lickCheck = 0;
             end
         end
 
     end
-
     
-    earnedRewardVolTotal = earnedRewardVolTotal + earnedRewardVol;
-
     Screen('FillRect', window, gray);
     Screen('FillRect',window, black, patchRect);
     vblAfterStimGrayTime = Screen('Flip', window, vblStim + (StimFrames - 0.5) * ifi);
     trialDigitalTagSession.outputSingleScan(0);
  
+    
+
+%     trialDigitalTagSession.outputSingleScan(0);
+ 
             
     if lickFlag == 1 %if the MOUSE LICKS
         %Change Counters
         hitCounter = hitCounter + 1;
+        rewardedTrial = 1;
+
+%         rewardStepMotorEnable.outputSingleScan(0);
+%         deliverReward(earnedRewardVol,syringeVol,rewardStepMotorCtl1,rewardStepMotorEnable);
+        earnedRewardVolTotal = earnedRewardVolTotal + earnedRewardVol;
+        deliverRewardFlag = 1;
 
         disp(['Hit: ', num2str(hitCounter), ' / ', num2str(StimCounter)]);
         disp(['Out of Stim Licks:', num2str(trialWaitPeriodLickCounter)]);
         disp(['passed time: ',num2str(floor((GetSecs()-startRecTime)/60)), ' Minutes']);
 
-        
+%         vblAfterStimGrayTime = Screen('Flip', window, vblStim + (StimFrames - 0.5) * ifi);
+%         trialDigitalTagSession.outputSingleScan(0);
+
+
     else %If the MOUSE DOESN'T LICK
         %Change Counters
         missedCounter = missedCounter + 1;
+        rewardedTrial = 0;
 
         disp(['Missed: ', num2str(missedCounter), ' / ', num2str(StimCounter)]);
         disp(['Out of Stim Licks:', num2str(trialWaitPeriodLickCounter)]);
         disp(['passed time: ',num2str(floor((GetSecs()-startRecTime)/60)), ' Minutes']);
-        
+
+%         vblAfterStimGrayTime = Screen('Flip', window, vblStim + (StimFrames - 0.5) * ifi);
+%         trialDigitalTagSession.outputSingleScan(0);
+
+
     end
     
     if normalLickDurBeforeStim == 0
@@ -504,20 +537,20 @@ for trialNo=1:totalTrialNo
         
         
     end
-
+        
     disp(' ');
     
     allPhases = [allPhases, phase];
     stimPresTime = [stimPresTime vblStim];
     allRandNoLickTimes = [allRandNoLickTimes noLickDurBeforeStim];
     allWaitPeriodLickNo = [allWaitPeriodLickNo trialWaitPeriodLickCounter];
- 
+
     trialWaitPeriodLickCounter = 0;
     % ITI wait and counting the number of the licks
     ITI_lickSensorScanIntervals = 0.2;
     while((GetSecs - vblAfterStimGrayTime) < afterStimGrayTime)
         scanStartTime = GetSecs;
-        [lickFlag, relDetectionTime] = detectLickOnRight(ITI_lickSensorScanIntervals, spoutSession);
+        [lickFlag, relDetectionTime] = detectLickMarch21(ITI_lickSensorScanIntervals, spoutSession);
         if lickFlag
             % to correct for the multiple transitions in the output of the
             % lick sensor and counting the real number of the licks, after
@@ -538,8 +571,9 @@ for trialNo=1:totalTrialNo
     
     waitPeriodLickCounter = waitPeriodLickCounter + trialWaitPeriodLickCounter;
     
+    
 end  
-%% stop the recording
+%%
 FinalTime = num2str(floor((GetSecs()-startRecTime)/60));
 sessionEndTime = now;
 
@@ -547,19 +581,20 @@ sessionEndTime = now;
 
 SendSlackNotification(slackNotifAddEhsan,strcat('box ',num2str(boxNumber),' is done!'));
 
+
 %Stop the recording
 disp('Saving the session...')
 
 %disable the pump
+
 rewardStepMotorEnable.outputSingleScan(1);
-
-
 pause(inputSavingDur) %To be sure that the whole session is recorded!
 
 signalsRecordingSession.stop()
 
 sca;
-
+% Close the audio device
+% PsychPortAudio('Close', pahandle);
 
 delete(lh);
 fclose(fid1);
@@ -599,6 +634,7 @@ copyfile(string(mfilename('fullpath')) + '.m', dataFolderAdd);
 
 figure()
 plot(t, ch);
+
 
 %% lick response based on the stim start detected by photodiode sensor
 
@@ -781,4 +817,3 @@ save(animalMatDataFileAdd,'Date','weightYesterday','addWaterYesterday','training
 
 
 %% generate the plots and replace on the google drive
-
