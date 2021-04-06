@@ -44,7 +44,7 @@ dataFolderName = 'Mouse' + string(mouseNumber) + '_' + datestr(date,'mm-dd-yyyy'
 mkdir(localDirectory,dataFolderName);
 dataFolderAdd = string(localDirectory) + '\' + dataFolderName;
 
-slackNotifAddEhsan = 'https://hooks.slack.com/services/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';
+slackNotifAddEhsan = 'https://hooks.slack.com/services/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';
 
 
 %% disable the sync check in the psychtoolbox
