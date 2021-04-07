@@ -245,6 +245,14 @@ gabortex = CreateProceduralGabor(window, gaborDimPixWidth, gaborDimPixHeight, []
 propertiesMat = [phase, freq, sigma, contrast, aspectRatio, 0, 0, 0];
 propertiesMatmock = [phase, freq, sigma, contrastMock, aspectRatio, 0, 0, 0];
 
+%--------------------
+heightOffsetInCM = 0;
+heightOffset = floor(heightOffsetInCM*pixelDensityCM);
+widthOffset = 0;
+
+stimHeightOffset = [0,heightOffset,0,gaborDimPixHeight+heightOffset];
+righImageHorzPos = [0,0,gaborDimPixWidth,0];
+
 %% ---------------------Camera and NI-Card Recording 
 
 % Black is the default value under the photodiode and on the screen, Flip the default screen
@@ -625,7 +633,7 @@ fid2 = fopen(binFile,'r');
 [data,count] = fread(fid2,[5,inf],'double');
 fclose(fid2);
 
-figure()
+% figure()
 t = data(1,:);
 ch = data(2:5,:);
 
