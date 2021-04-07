@@ -380,8 +380,8 @@ for trialNo=1:totalTrialNo
                 if rewardDelivered == 0
                     if (GetSecs - vblStim) > stimRewardDelay
                         deliverRewardMarch21(earnedRewardVol,syringeVol,rewardStepMotorCtl1);
-                        rewardDelivered = 1;
-                    end 
+                    end
+                    rewardDelivered = 1;
                 end
 
 
