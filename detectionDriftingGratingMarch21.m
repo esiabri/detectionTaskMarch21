@@ -386,6 +386,11 @@ for trialNo=1:totalTrialNo
 
 
             end
+            
+            Screen('FillRect', window, gray);
+            Screen('FillRect',window, black, patchRect);
+            vblAfterStimGrayTime = Screen('Flip', window, vblStim + (StimFrames - 0.5) * ifi);
+            trialDigitalTagSession.outputSingleScan(0);
         
     end
     
