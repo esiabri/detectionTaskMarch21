@@ -394,10 +394,6 @@ for trialNo=1:totalTrialNo
         
     end
     
-    % Present gray screen
-    Screen('FillRect', window, gray);
-    Screen('FillRect',window, white, patchRect);
-    
                 
 %no lick time is 5 seconds at least in all trials 
     noLickDurBeforeStim = 5;
