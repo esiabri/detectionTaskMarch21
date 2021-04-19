@@ -673,9 +673,7 @@ for trialNo=1:totalTrialNo
     % 
 %         Screen('DrawTextures', window, gabortex, [], righMirrorImageHorzPos+stimHeightOffset, orientationPreferred, [], [], [], [],...
 %             kPsychDontDoRotation, propertiesMat');
-    trialDigitalTagSession.outputSingleScan(1);
-    [vblStim StimulusOnsetTime FlipTimestampStim MissedStim BeamposStim] = Screen('Flip', window, cuePresTime + (1 - 0.5) * ifi);
-    
+        
                 
 %no lick time is 5 seconds at least in all trials 
     noLickDurBeforeStim = 5;
@@ -735,9 +733,8 @@ for trialNo=1:totalTrialNo
 
     StimCounterPerContrast(contrastInd) = StimCounterPerContrast(contrastInd) + 1;
         
-        
-
-
+    trialDigitalTagSession.outputSingleScan(1);
+    [vblStim StimulusOnsetTime FlipTimestampStim MissedStim BeamposStim] = Screen('Flip', window, cuePresTime + (1 - 0.5) * ifi);
 
     % wait 0.5 seconds to give the reward
     
