@@ -641,7 +641,7 @@ for trialNo=1:totalTrialNo
 
                 % loading the next frame
                 Screen('FillRect', window, gray);
-                Screen('FillRect',window, white, patchRect);
+                Screen('FillRect',window, black, patchRect);
                 Screen('DrawTextures', window, gratingTex, [], righImageHorzPos+stimHeightOffset, orientationPreferred, [], [], [], [],...
                     kPsychUseTextureMatrixForRotation, propertiesMat');
 
@@ -755,7 +755,7 @@ for trialNo=1:totalTrialNo
 
         % loading the next frame
         Screen('FillRect', window, gray);
-        Screen('FillRect',window, white, patchRect);
+        Screen('FillRect',window, black, patchRect);
         Screen('DrawTextures', window, gratingTex, [], righImageHorzPos+stimHeightOffset, orientationPreferred, [], [], [], [],...
             kPsychUseTextureMatrixForRotation, propertiesMat');
 

@@ -140,7 +140,7 @@ StimFrames = round(StimDuration/ifi);
 
 % contrastVector = [0.001, 0.01, 0.1, 1];
 
-contrast = 0.2;
+contrast = 0.05;
 
 % propertiesMat = [phase, freq, sigma, contrast, aspectRatio, 0, 0, 0];
 propertiesMat = [phase, freq, contrast, 0];
@@ -155,8 +155,7 @@ vblStim = Screen('Flip', window);
 
 vbl = vblStim;
 
-for driftFrames=1:StimFrames-1
-
+while (~KbCheck)
         % calculating the phase of the grating in this frame based on the
         % temporal frequency
         phaseLine = phaseLine + degPerFrame;
