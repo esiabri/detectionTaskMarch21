@@ -140,7 +140,7 @@ StimFrames = round(StimDuration/ifi);
 
 % contrastVector = [0.001, 0.01, 0.1, 1];
 
-contrast = 0.05;
+contrast = 0.8;
 
 % propertiesMat = [phase, freq, sigma, contrast, aspectRatio, 0, 0, 0];
 propertiesMat = [phase, freq, contrast, 0];

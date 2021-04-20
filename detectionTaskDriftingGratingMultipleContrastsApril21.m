@@ -285,7 +285,7 @@ Screen('Flip', window);
 % rate is estimated based on premature licking during the last second of
 % waiting for the new trial
 
-contrastVector = [0.05, 0.1, 0.2, 0.4];
+contrastVector = [0.05, 0.1, 0.2, 0.4, 0.8];
 numberOfContrasts = size(contrastVector,2);
 
 numberOfTrialsPerContrast = round(totalTrialNo/numberOfContrasts);
@@ -450,9 +450,9 @@ while(1)
 %the wait time before stimulus (no lick time) is randomly either 5 or 6
 %seconds
     if rand>0.5
-        noLickDurBeforeStim = 0.6;
+        noLickDurBeforeStim = 6;
     else
-        noLickDurBeforeStim = 0.5;
+        noLickDurBeforeStim = 5;
     end
 
     FA_flag = 0;
