@@ -17,7 +17,7 @@ Screen('Preference', 'SkipSyncTests', 1);
 % FA
 
 localDirectory = 'D:\recordedData\Behavioral\Ehsan';
-googleDriveLocalFolderAddress = 'D:\googledriveSyncFolder';
+googleDriveLocalFolderAddress = 'G:\My Drive\behavioralRestults';
 networkDirectory = 'Z:\recordedData\Behavioral\Ehsan'; %this is the address that the copy will be attempted at the end of the
 % of the session and also will be synced during the night with the hard
 % drive (in case the network is not valid)
@@ -1108,6 +1108,22 @@ animalMatDataFileAdd = strcat(defaultPath,'\',num2str(mouseNumber),'.mat');
 load(animalMatDataFileAdd)
 
 
+%% updating the database for the animal
+
+Date = [Date, string(date)];
+weightYesterday = [weightYesterday, string(MouseWeight)];
+addWaterYesterday = [addWaterYesterday, string(addWater)];
+trainingStage = [trainingStage, string(stageOfTraining)];
+hitCount{end+1} = hitCounterPerContrast;  % add empty vectors for the days without data for this item
+stimCount{end+1} = StimCounterPerContrast;
+firstLickDist{end+1} = firstLickAfterStimDifferentContrastsToPlot;
+totalTodayReward = [totalTodayReward, earnedRewardVolTotal];
+FA_count = [FA_count, FA_counter];
+extendedStimCount = [extendedStimCount, extendedITT_trialsCounter];
+
+save(animalMatDataFileAdd,'Date','weightYesterday','addWaterYesterday','trainingStage','hitCount',...
+    'stimCount','firstLickDist','totalTodayReward',...
+    'mouseInitialWeight','FA_count','extendedStimCount','-append');
 
 
 
@@ -1141,7 +1157,7 @@ for sessionCounter=1:length(sessionID_multipleContrasts)
     end
 end
     
-todayDayNoOfMultipleContrasts = length(sessionID_multipleContrastsToInclude)+1;    
+todayDayNoOfMultipleContrasts = length(sessionID_multipleContrastsToInclude);    
 
 %% first lick distribution for different contrasts
 h = figure('Position', [50 50 600 1000]);
@@ -1184,22 +1200,6 @@ fileAdd = strcat(googleDriveLocalFolderAddress,'\',mouseNumber,'\',fileName);
 print(h,fileAdd,'-dpdf','-r0')
 
 
-%% updating the database for the animal
-
-Date = [Date, string(date)];
-weightYesterday = [weightYesterday, string(MouseWeight)];
-addWaterYesterday = [addWaterYesterday, string(addWater)];
-trainingStage = [trainingStage, string(stageOfTraining)];
-hitCount{end+1} = hitCounterPerContrast;  % add empty vectors for the days without data for this item
-stimCount{end+1} = StimCounterPerContrast;
-firstLickDist{end+1} = firstLickAfterStimDifferentContrastsToPlot;
-totalTodayReward = [totalTodayReward, earnedRewardVolTotal];
-FA_count = [FA_count, FA_counter];
-extendedStimCount = [extendedStimCount, extendedITT_trialsCounter];
-
-save(animalMatDataFileAdd,'Date','weightYesterday','addWaterYesterday','trainingStage','hitCount',...
-    'stimCount','firstLickDist','totalTodayReward',...
-    'mouseInitialWeight','FA_count','extendedStimCount','-append');
 
 
 %% generate the plots and replace on the google drive
