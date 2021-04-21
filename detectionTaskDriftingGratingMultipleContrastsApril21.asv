@@ -17,6 +17,7 @@ Screen('Preference', 'SkipSyncTests', 1);
 % FA
 
 localDirectory = 'D:\recordedData\Behavioral\Ehsan';
+googleDriveLocalFolderAddress = 'D:\googledriveSyncFolder';
 networkDirectory = 'Z:\recordedData\Behavioral\Ehsan'; %this is the address that the copy will be attempted at the end of the
 % of the session and also will be synced during the night with the hard
 % drive (in case the network is not valid)
@@ -285,7 +286,7 @@ Screen('Flip', window);
 % rate is estimated based on premature licking during the last second of
 % waiting for the new trial
 
-contrastVector = [0.05, 0.1, 0.2, 0.4];
+contrastVector = [0.05, 0.1, 0.2, 0.4, 0.8];
 numberOfContrasts = size(contrastVector,2);
 
 numberOfTrialsPerContrast = round(totalTrialNo/numberOfContrasts);
@@ -450,9 +451,9 @@ while(1)
 %the wait time before stimulus (no lick time) is randomly either 5 or 6
 %seconds
     if rand>0.5
-        noLickDurBeforeStim = 0.6;
+        noLickDurBeforeStim = 6;
     else
-        noLickDurBeforeStim = 0.5;
+        noLickDurBeforeStim = 5;
     end
 
     FA_flag = 0;
@@ -591,7 +592,11 @@ end
 disp('');
 disp('Main Loop Started')
 
+freeRewardVector = []; % to indicate the free reward trials so later on these trials will be identified
+
 startRecTime = GetSecs();
+
+freeRewardFlag = 0;
 
 for trialNo=1:totalTrialNo
 % Water will be delivered if the mice stop licking for 10 consecutive trials    
@@ -641,7 +646,7 @@ for trialNo=1:totalTrialNo
 
                 % loading the next frame
                 Screen('FillRect', window, gray);
-                Screen('FillRect',window, black, patchRect);
+                Screen('FillRect',window, white, patchRect);
                 Screen('DrawTextures', window, gratingTex, [], righImageHorzPos+stimHeightOffset, orientationPreferred, [], [], [], [],...
                     kPsychUseTextureMatrixForRotation, propertiesMat');
 
@@ -663,8 +668,14 @@ for trialNo=1:totalTrialNo
             trialDigitalTagSession.outputSingleScan(0);
             
             freeRewardCounter = freeRewardCounter + 1;
+            
+            freeRewardFlag = 1;
         
     end
+    
+    
+    freeRewardVector = [freeRewardVector freeRewardFlag]; %to indicate the presented stimulus as the free reward
+    freeRewardFlag = 0;
     
     % Present gray screen
     Screen('FillRect', window, gray);
@@ -673,9 +684,7 @@ for trialNo=1:totalTrialNo
     % 
 %         Screen('DrawTextures', window, gabortex, [], righMirrorImageHorzPos+stimHeightOffset, orientationPreferred, [], [], [], [],...
 %             kPsychDontDoRotation, propertiesMat');
-    trialDigitalTagSession.outputSingleScan(1);
-    [vblStim StimulusOnsetTime FlipTimestampStim MissedStim BeamposStim] = Screen('Flip', window, cuePresTime + (1 - 0.5) * ifi);
-    
+        
                 
 %no lick time is 5 seconds at least in all trials 
     noLickDurBeforeStim = 5;
@@ -735,9 +744,8 @@ for trialNo=1:totalTrialNo
 
     StimCounterPerContrast(contrastInd) = StimCounterPerContrast(contrastInd) + 1;
         
-        
-
-
+    trialDigitalTagSession.outputSingleScan(1);
+    [vblStim StimulusOnsetTime FlipTimestampStim MissedStim BeamposStim] = Screen('Flip', window, cuePresTime + (1 - 0.5) * ifi);
 
     % wait 0.5 seconds to give the reward
     
@@ -755,7 +763,7 @@ for trialNo=1:totalTrialNo
 
         % loading the next frame
         Screen('FillRect', window, gray);
-        Screen('FillRect',window, black, patchRect);
+        Screen('FillRect',window, white, patchRect);
         Screen('DrawTextures', window, gratingTex, [], righImageHorzPos+stimHeightOffset, orientationPreferred, [], [], [], [],...
             kPsychUseTextureMatrixForRotation, propertiesMat');
 
@@ -831,6 +839,8 @@ for trialNo=1:totalTrialNo
         
         
     end
+    
+    freeRewardVector = [freeRewardVector 0]; % this presented stimulus has not been a free reward
         
     disp(' ');
     
@@ -895,11 +905,9 @@ fclose(fid1);
 
 
 
-%% Saving the variables of the session and the code file in the recording
-%directory
-save(dataFolderAdd + '\' + 'workspaceVariables');
-copyfile(string(mfilename('fullpath')) + '.m', dataFolderAdd);
 
+
+%% report the performance
 disp(' ');
 for contrastInd=1:numberOfContrasts
     disp(['Hit Contrast',num2str(contrastInd),' : ', num2str(hitCounterPerContrast(contrastInd)), ' / ', num2str(StimCounterPerContrast(contrastInd))]);
@@ -927,8 +935,6 @@ fclose(fid2);
 t = data(1,:);
 ch = data(2:5,:);
 
-save(dataFolderAdd + '\' + 'workspaceVariables');
-copyfile(string(mfilename('fullpath')) + '.m', dataFolderAdd);
 
 figure()
 plot(t, ch);
@@ -991,34 +997,76 @@ end
 minimumExpectedStimDur = 1;
 stimStartPhotodiode = stimStartPhotodiode(stimDur>minimumExpectedStimDur);
 
+
+
 if length(stimStartPhotodiode) ~= (StimCounter+freeRewardCounter+StimCounterWarmup)
     disp('the number of stimuli detected on the photodiode is not matching the presented stimuli');
+    actualStimDur = 0;
+    stimDurToPlot = StimDuration;
+else
+    actualStimDur = mean(stimDur(stimDur>minimumExpectedStimDur));
+    stimDurToPlot = actualStimDur;
 end
 
 
 windowBeforeStimStart = 3;
 windowAfterStimStart = 5;
 
+% the window during which the median of first lick delay is calculated:
+% the mean of actual stim presentaion plus 0.5 s
+windowAfterStimStartToCalcDelay = stimDurToPlot + 0.5; 
+
 stimLockedLickTimesAllTrials = [];
-firstLickAfterStimAllTrials = [];
+firstLickAfterStimAllTrialsToPlot = [];
+
+firstLickAfterStimDifferentContrastsToPlot = {};
+for ContrastCounter=1:numberOfContrasts
+    firstLickAfterStimDifferentContrastsToPlot{ContrastCounter} = [];
+end
+
+firstLickAfterStimDifferentContrastsToCalcDelay = {};
+for ContrastCounter=1:numberOfContrasts
+    firstLickAfterStimDifferentContrastsToCalcDelay{ContrastCounter} = [];
+end
 
 maxTimeToLookForTheFirstLick = windowAfterStimStart;
 
-for stimCounter=1:size(stimStartPhotodiode,2)
+for stimCounter=(StimCounterWarmup+1):size(stimStartPhotodiode,2)
+    
+    if freeRewardVector(stimCounter-StimCounterWarmup) % skip this stim if it was a free reward
+        continue
+    end
     
     stimLockedLickTimes = lickTimes(lickTimes>(stimStartPhotodiode(stimCounter)-windowBeforeStimStart) & lickTimes<(stimStartPhotodiode(stimCounter)+windowAfterStimStart)) - stimStartPhotodiode(stimCounter);
     
-    firstLickAfterStim = lickTimes(lickTimes>stimStartPhotodiode(stimCounter) & lickTimes<(stimStartPhotodiode(stimCounter)+windowAfterStimStart)) - stimStartPhotodiode(stimCounter);
+    firstLickAfterStimToPlot = lickTimes(lickTimes>stimStartPhotodiode(stimCounter) & lickTimes<(stimStartPhotodiode(stimCounter)+windowAfterStimStart)) - stimStartPhotodiode(stimCounter);
     
-    firstLickAfterStim = firstLickAfterStim(firstLickAfterStim<maxTimeToLookForTheFirstLick);
-    if size(firstLickAfterStim)
-        firstLickAfterStim = firstLickAfterStim(1);
+    firstLickAfterStimToCalcDelay = lickTimes(lickTimes>stimStartPhotodiode(stimCounter) & lickTimes<(stimStartPhotodiode(stimCounter)+windowAfterStimStartToCalcDelay)) - stimStartPhotodiode(stimCounter);
+    
+    
+    firstLickAfterStimToPlot = firstLickAfterStimToPlot(firstLickAfterStimToPlot<maxTimeToLookForTheFirstLick);
+    if size(firstLickAfterStimToPlot)
+        firstLickAfterStimToPlot = firstLickAfterStimToPlot(1);
     else
-        firstLickAfterStim = double.empty(1,0);
+        firstLickAfterStimToPlot = double.empty(1,0);
+    end
+    
+    firstLickAfterStimToCalcDelay = firstLickAfterStimToCalcDelay(firstLickAfterStimToCalcDelay<maxTimeToLookForTheFirstLick);
+    if size(firstLickAfterStimToCalcDelay)
+        firstLickAfterStimToCalcDelay = firstLickAfterStimToCalcDelay(1);
+    else
+        firstLickAfterStimToCalcDelay = double.empty(1,0);
     end
         
     stimLockedLickTimesAllTrials = [stimLockedLickTimesAllTrials stimLockedLickTimes];
-    firstLickAfterStimAllTrials = [firstLickAfterStimAllTrials firstLickAfterStim];
+    firstLickAfterStimAllTrialsToPlot = [firstLickAfterStimAllTrialsToPlot firstLickAfterStimToPlot];
+    
+    contrastInd = find(contrastVector == contrastsBuild(stimCounter-StimCounterWarmup));
+    
+    firstLickAfterStimDifferentContrastsToPlot{contrastInd} = [firstLickAfterStimDifferentContrastsToPlot{contrastInd} firstLickAfterStimToPlot];
+    
+    firstLickAfterStimDifferentContrastsToCalcDelay{contrastInd} = ...
+        [firstLickAfterStimDifferentContrastsToCalcDelay{contrastInd} firstLickAfterStimToCalcDelay];
 end
 
 histStep = 0.05;
@@ -1037,7 +1085,7 @@ histBins = (-windowStartBeforeStim:histStep:windowAfterStimStart)+histStep/2;
 colorVec = ["#4569D3","#97D345","#D3C845","#D38145","#D34550"];
 
 figure()
-[histCounts,histCenters] = hist(firstLickAfterStimAllTrials,histBins);
+[histCounts,histCenters] = hist(firstLickAfterStimAllTrialsToPlot,histBins);
 
 bar(histCenters,histCounts,1,'FaceColor',colorVec(1),'EdgeColor','none');
 title(strcat('distribution for the time of the first lick'));
@@ -1045,60 +1093,21 @@ title(strcat('distribution for the time of the first lick'));
 xlabel('time from stim start (seconds)');
 
 yl = ylim;
-text(0.5*maxTimeToLookForTheFirstLick,yl(2)*0.75,['median delay: ',num2str(round(1000*median(firstLickAfterStimAllTrials))),' ms'])
+text(0.5*maxTimeToLookForTheFirstLick,yl(2)*0.75,['median delay: ',num2str(round(1000*median(firstLickAfterStimAllTrialsToPlot))),' ms'])
 
 hold on
-plot([0 StimDuration],[yl(2)*0.9 yl(2)*0.9],'k','linewidth',2)
-%% update the data base for the animal
+plot([0 stimDurToPlot],[yl(2)*0.9 yl(2)*0.9],'k','linewidth',2)
 
-% load the data base for the animal
+
+%%
+
+%% load the data base for the animal
 defaultPath = 'D:\animalsMatFiles';
 
 animalMatDataFileAdd = strcat(defaultPath,'\',num2str(mouseNumber),'.mat');
 load(animalMatDataFileAdd)
 
-Date = [Date, string(date)];
-weightYesterday = [weightYesterday, string(MouseWeight)];
-addWaterYesterday = [addWaterYesterday, addWater];
-trainingStage = [trainingStage, string(stageOfTraining)];
-hitCountReinforceStatic = [hitCountReinforceStatic, []];  % add empty vectors for the days without data for this item
-stimCountReinforceStatic = [stimCountReinforceStatic, []];
-hitCountDetectionStatic = [hitCountDetectionStatic, []];
-stimCountDetectionStatic = [stimCountDetectionStatic, []];
-hitCountReinforceDrifting = [hitCountReinforceDrifting, []];
-stimCountReinforceDrifting = [stimCountReinforceDrifting, []];
-hitCountDetectionDrifting = [hitCountDetectionDrifting, []];
-stimCountDetectionDrifting = [stimCountDetectionDrifting, []];
-hitCountContrastLearningStatic = [hitCountContrastLearningStatic, []];
-stimCountContrastLearningStatic = [stimCountContrastLearningStatic, []];
-hitCountContrastLearningDrifting = [hitCountContrastLearningDrifting, []];
-stimCountContrastLearningDrifting = [stimCountContrastLearningDrifting, []];
-firstLickDistReinforceStatic = [firstLickDistReinforceStatic, []];
-firstLickDistDetectionStatic = [firstLickDistDetectionStatic, []];
-firstLickDistReinforceDrifting = [firstLickDistReinforceDrifting, firstLickAfterStimAllTrials];
-firstLickDistDetectionDrifting = [firstLickDistDetectionDrifting, []];
-firstLickDistContrastLearningStatic = [firstLickDistContrastLearningStatic, []];
-firstLickDistContrastLearningDrifting = [firstLickDistContrastLearningDrifting, []];
-totalTodayReward = [totalTodayReward, earnedRewardVolTotal];
-FA_countReinforceStatic = [FA_countReinforceStatic,[]];
-FA_countDetectionStatic = [FA_countDetectionStatic,[]];
-FA_countReinforceDrifting = [FA_countReinforceDrifting, FA_counter];
-FA_countDetectionDrifting = [FA_countDetectionDrifting,[]];
-extendedStimCountReinforceStatic = [extendedStimCountReinforceStatic,[]];
-extendedStimCountDetectionStatic = [extendedStimCountDetectionStatic,[]];
-extendedStimCountReinforceDrifting = [extendedStimCountReinforceDrifting, extendedITT_trialsCounter];
-extendedStimCountDetectionDrifting = [extendedStimCountDetectionDrifting,[]];
 
-save(animalMatDataFileAdd,'Date','weightYesterday','addWaterYesterday','trainingStage','hitCountReinforceStatic',...
-    'stimCountReinforceStatic','hitCountDetectionStatic','stimCountDetectionStatic',...
-    'hitCountReinforceDrifting','stimCountReinforceDrifting','hitCountDetectionDrifting','stimCountDetectionDrifting',...
-    'hitCountContrastLearningStatic','stimCountContrastLearningStatic','hitCountContrastLearningDrifting','stimCountContrastLearningDrifting',...
-    'firstLickDistReinforceStatic',...
-    'firstLickDistDetectionStatic','firstLickDistReinforceDrifting','firstLickDistDetectionDrifting',...
-    'firstLickDistContrastLearningStatic','firstLickDistContrastLearningDrifting','totalTodayReward',...
-    'mouseInitialWeight','FA_countReinforceStatic','FA_countDetectionStatic','FA_countReinforceDrifting',...
-    'FA_countDetectionDrifting','extendedStimCountReinforceStatic','extendedStimCountDetectionStatic',...
-    'extendedStimCountReinforceDrifting','extendedStimCountDetectionDrifting','-append');
 
 
 
@@ -1111,7 +1120,193 @@ save(animalMatDataFileAdd,'Date','weightYesterday','addWaterYesterday','training
 % 
 % newVar = [];
 % save(dataFileAdd,'newVar','-append')
+%% determine the day number of multiple contrasts training
 
+sessionID_multipleContrasts = find(trainingStage == "MultipleContrasts");
+
+sessionID_multipleContrastsToInclude = []; %to exclude the extra sessions that should be ignored in
+
+for sessionCounter=1:length(sessionID_multipleContrasts)
+    
+    sessionInd = sessionID_multipleContrasts(sessionCounter);
+    
+    % check to see if there is any other sessions been recorded in this day
+    
+    sessionDateTemp = Date(sessionInd);
+    
+    sessionsIndInThisDay = find(Date == sessionDateTemp);
+    
+    if sessionInd == sessionsIndInThisDay(end) % just include the last session from this day
+        sessionID_multipleContrastsToInclude = [sessionID_multipleContrastsToInclude sessionInd];
+    end
+end
+    
+todayDayNoOfMultipleContrasts = length(sessionID_multipleContrastsToInclude)+1;    
+
+%% first lick distribution for different contrasts
+h = figure('Position', [50 50 600 1000]);
+for ContrastCounter=1:numberOfContrasts
+%     
+    subplot(numberOfContrasts,1,numberOfContrasts-ContrastCounter+1)
+    [histCounts,histCenters] = hist(firstLickAfterStimDifferentContrastsToPlot{ContrastCounter},histBins);
+    bar(histCenters,histCounts,1,'FaceColor',colorVec(ContrastCounter),'EdgeColor','none');
+    title(strcat('Contrast #',num2str(ContrastCounter)));
+    
+    % ttest of first lick distribution vs the highest contrast
+    [hTemp,p] = ttest2(firstLickAfterStimDifferentContrastsToCalcDelay{ContrastCounter},firstLickAfterStimDifferentContrastsToCalcDelay{5});
+    
+    yl = ylim;
+    text(0.5*maxTimeToLookForTheFirstLick,yl(2)*0.9,['Hit Rate: ',num2str(hitCounterPerContrast(ContrastCounter)), ' / ', num2str(StimCounterPerContrast(ContrastCounter)) ...
+        ,' (',num2str(round(hitCounterPerContrast(ContrastCounter)*100.0/StimCounterPerContrast(ContrastCounter))),'%)']);
+    text(0.5*maxTimeToLookForTheFirstLick,yl(2)*0.75,['median delay: ',...
+        num2str(round(1000*median(firstLickAfterStimDifferentContrastsToCalcDelay{ContrastCounter}))),' ms'])
+     text(0.5*maxTimeToLookForTheFirstLick,yl(2)*0.6,['mean delay: ',...
+         num2str(round(1000*mean(firstLickAfterStimDifferentContrastsToCalcDelay{ContrastCounter}))),' ms'])
+     text(0.5*maxTimeToLookForTheFirstLick,yl(2)*0.45,['p( vs C5): ',...
+         sprintf('%.1d',p)])
+    if ContrastCounter == 1
+        xlabel('time from stim start (seconds)');
+    end
+    
+    hold on
+    plot([0 stimDurToPlot],[yl(2)*0.9 yl(2)*0.9],'k','linewidth',2)
+
+end
+sgtitle({strcat('#',mouseNumber, ' Day', num2str(todayDayNoOfMultipleContrasts)) ,string(date),...
+    'Distribution of First Lick Time across Trials'})
+
+set(h,'Units','Inches');
+pos = get(h,'Position');
+set(h,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
+
+fileName = strcat('contrastResponseDist_Day', num2str(todayDayNoOfMultipleContrasts));
+fileAdd = strcat(googleDriveLocalFolderAddress,'\',mouseNumber,'\',fileName);
+print(h,fileAdd,'-dpdf','-r0')
+
+
+%% updating the database for the animal
+
+Date = [Date, string(date)];
+weightYesterday = [weightYesterday, string(MouseWeight)];
+addWaterYesterday = [addWaterYesterday, string(addWater)];
+trainingStage = [trainingStage, string(stageOfTraining)];
+hitCount{end+1} = hitCounterPerContrast;  % add empty vectors for the days without data for this item
+stimCount{end+1} = StimCounterPerContrast;
+firstLickDist{end+1} = firstLickAfterStimDifferentContrastsToPlot;
+totalTodayReward = [totalTodayReward, earnedRewardVolTotal];
+FA_count = [FA_count, FA_counter];
+extendedStimCount = [extendedStimCount, extendedITT_trialsCounter];
+
+save(animalMatDataFileAdd,'Date','weightYesterday','addWaterYesterday','trainingStage','hitCount',...
+    'stimCount','firstLickDist','totalTodayReward',...
+    'mouseInitialWeight','FA_count','extendedStimCount','-append');
 
 
 %% generate the plots and replace on the google drive
+
+% performance change across days for different contrasts
+
+h = figure('Position', [50 50 600 1000]);
+for ContrastCounter=1:numberOfContrasts
+%     
+%     subplot(numberOfContrasts,1,numberOfContrasts-ContrastCounter+1)
+    hold on
+    
+    tempContrastHitRate = [];
+    
+    for sessionCounter=1:todayDayNoOfMultipleContrasts
+        sessionInd = sessionID_multipleContrastsToInclude(sessionCounter);
+        tempContrastHitRate(end+1) = (hitCount{sessionCounter}(ContrastCounter))/(stimCount{sessionCounter}(ContrastCounter))*100;
+    end
+    
+    p = plot(tempContrastHitRate);
+    p.Color = colorVec(ContrastCounter);
+    p.LineStyle = '--';
+    p.Marker = 'o';
+    
+    
+    if ContrastCounter == 1
+        xlabel('day');
+    end
+    
+    yl = ylim;
+    
+%     text(0.5,(yl(1)+yl(2))/2,['Contrast',num2str(ContrastCounter)])
+    
+    xlim([0, todayDayNoOfMultipleContrasts+1])
+    
+    xticks(1:todayDayNoOfMultipleContrasts)
+    
+    
+
+end
+
+legend('Contrast1','Contrast2','Contrast2','Contrast2','Contrast2')
+
+sgtitle({strcat('#',mouseNumber), ' Performance Across Days'})
+
+set(h,'Units','Inches');
+pos = get(h,'Position');
+set(h,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
+
+fileName = 'PerformanceAcrossDays_AllContrasts';
+fileAdd = strcat(googleDriveLocalFolderAddress,'\',mouseNumber,'\',fileName);
+print(h,fileAdd,'-dpdf','-r0')
+
+% response delay change across days for different contrasts
+
+h = figure('Position', [50 50 600 1000]);
+for ContrastCounter=1:numberOfContrasts
+%     
+%     subplot(numberOfContrasts,1,numberOfContrasts-ContrastCounter+1)
+    hold on
+    tempDelayMean = [];
+    tempDelaySEM = [];
+    
+    for sessionCounter=1:todayDayNoOfMultipleContrasts
+        sessionInd = sessionID_multipleContrastsToInclude(sessionCounter);
+        
+        firstLickTimes = cell2mat(firstLickDist{sessionCounter}(ContrastCounter));
+        firstLickTimes = firstLickTimes(firstLickTimes<2.5);
+        
+        tempDelayMean(end+1) = mean(firstLickTimes);
+        tempDelaySEM(end+1) = std(firstLickTimes)/sqrt(length(firstLickTimes));
+        
+    end
+    
+    p = plot(tempDelayMean*1000);
+    p.Color = colorVec(ContrastCounter);
+    p.LineStyle = '--';
+    p.Marker = 'o';
+    
+    
+    if ContrastCounter == 1
+        xlabel('day');
+    end
+    
+    ylabel('delay(ms)');
+    
+    yl = ylim;
+    
+%     text(0.5,(yl(1)+yl(2))/2,['Contrast',num2str(ContrastCounter)])
+    
+    xlim([0, todayDayNoOfMultipleContrasts+1])
+    
+    xticks(1:todayDayNoOfMultipleContrasts)
+
+end
+sgtitle({strcat('#',mouseNumber), ' Response Delay Across Days'})
+
+set(h,'Units','Inches');
+pos = get(h,'Position');
+set(h,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
+
+fileName = 'ResponseDelayAcrossDays_AllContrasts';
+fileAdd = strcat(googleDriveLocalFolderAddress,'\',mouseNumber,'\',fileName);
+print(h,fileAdd,'-dpdf','-r0')
+
+
+%% Saving the variables of the session and the code file in the recording
+%directory
+save(dataFolderAdd + '\' + 'workspaceVariables');
+copyfile(string(mfilename('fullpath')) + '.m', dataFolderAdd);
