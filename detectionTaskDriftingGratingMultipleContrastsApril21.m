@@ -903,8 +903,8 @@ sca;
 delete(lh);
 fclose(fid1);
 
-
-
+% saving the m-file before any error is raised! 
+copyfile(string(mfilename('fullpath')) + '.m', dataFolderAdd);
 
 
 %% report the performance
@@ -1237,11 +1237,24 @@ for ContrastCounter=1:numberOfContrasts
     
     xticks(1:todayDayNoOfMultipleContrasts)
     
+    ylabel('Hit Rate (%)');
+    
     
 
 end
 
-legend('Contrast1','Contrast2','Contrast3','Contrast4','Contrast5')
+tempFA_Rate = [];
+
+for sessionCounter=1:todayDayNoOfMultipleContrasts
+        sessionInd = sessionID_multipleContrastsToInclude(sessionCounter);
+        tempFA_Rate(end+1) = (FA_count(sessionCounter))/(extendedStimCount(sessionCounter))*100;
+end
+p = plot(tempFA_Rate);
+p.Color = 'k';
+p.LineStyle = '--';
+p.Marker = 'o';
+
+legend('Contrast1','Contrast2','Contrast3','Contrast4','Contrast5','FA')
 
 sgtitle({strcat('#',mouseNumber), ' Performance Across Days'})
 
@@ -1275,6 +1288,7 @@ for ContrastCounter=1:numberOfContrasts
     end
     
     p = plot(tempDelayMean*1000);
+%     p = errorbar(tempDelayMean*1000,tempDelaySEM*1000);
     p.Color = colorVec(ContrastCounter);
     p.LineStyle = '--';
     p.Marker = 'o';
@@ -1294,7 +1308,7 @@ for ContrastCounter=1:numberOfContrasts
     
     xticks(1:todayDayNoOfMultipleContrasts)
     
-    ylabel('Hit Rate (%)');
+    ylabel('ms');
 
 end
 
@@ -1314,4 +1328,3 @@ print(h,fileAdd,'-dpdf','-r0')
 %% Saving the variables of the session and the code file in the recording
 %directory
 save(dataFolderAdd + '\' + 'workspaceVariables');
-copyfile(string(mfilename('fullpath')) + '.m', dataFolderAdd);
