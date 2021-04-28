@@ -309,7 +309,7 @@ stimVector = stimVector(randperm(length(stimVector)));
 
 %--------------------------------------------------------------------------
 %% TRIAL PARAMETERS
-afterStimGrayTime = 3; %in sec
+afterStimGrayTime = 1; %in sec
 afterStimGrayFrames = round(afterStimGrayTime/ifi);
 
  

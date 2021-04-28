@@ -17,7 +17,7 @@ Screen('Preference', 'SkipSyncTests', 1);
 % FA
 
 localDirectory = 'D:\recordedData\Behavioral\Ehsan';
-googleDriveLocalFolderAddress = 'D:\googledriveSyncFolder';
+googleDriveLocalFolderAddress = 'G:\My Drive\behavioralRestults';
 networkDirectory = 'Z:\recordedData\Behavioral\Ehsan'; %this is the address that the copy will be attempted at the end of the
 % of the session and also will be synced during the night with the hard
 % drive (in case the network is not valid)
@@ -309,7 +309,7 @@ stimVector = stimVector(randperm(length(stimVector)));
 
 %--------------------------------------------------------------------------
 %% TRIAL PARAMETERS
-afterStimGrayTime = 3; %in sec
+afterStimGrayTime = 1; %in sec
 afterStimGrayFrames = round(afterStimGrayTime/ifi);
 
  
@@ -903,8 +903,8 @@ sca;
 delete(lh);
 fclose(fid1);
 
-
-
+% saving the m-file before any error is raised! 
+copyfile(string(mfilename('fullpath')) + '.m', dataFolderAdd);
 
 
 %% report the performance
@@ -1108,6 +1108,22 @@ animalMatDataFileAdd = strcat(defaultPath,'\',num2str(mouseNumber),'.mat');
 load(animalMatDataFileAdd)
 
 
+%% updating the database for the animal
+
+Date = [Date, string(date)];
+weightYesterday = [weightYesterday, string(MouseWeight)];
+addWaterYesterday = [addWaterYesterday, string(addWater)];
+trainingStage = [trainingStage, string(stageOfTraining)];
+hitCount{end+1} = hitCounterPerContrast;  % add empty vectors for the days without data for this item
+stimCount{end+1} = StimCounterPerContrast;
+firstLickDist{end+1} = firstLickAfterStimDifferentContrastsToPlot;
+totalTodayReward = [totalTodayReward, earnedRewardVolTotal];
+FA_count = [FA_count, FA_counter];
+extendedStimCount = [extendedStimCount, extendedITT_trialsCounter];
+
+save(animalMatDataFileAdd,'Date','weightYesterday','addWaterYesterday','trainingStage','hitCount',...
+    'stimCount','firstLickDist','totalTodayReward',...
+    'mouseInitialWeight','FA_count','extendedStimCount','-append');
 
 
 
@@ -1141,7 +1157,7 @@ for sessionCounter=1:length(sessionID_multipleContrasts)
     end
 end
     
-todayDayNoOfMultipleContrasts = length(sessionID_multipleContrastsToInclude)+1;    
+todayDayNoOfMultipleContrasts = length(sessionID_multipleContrastsToInclude);    
 
 %% first lick distribution for different contrasts
 h = figure('Position', [50 50 600 1000]);
@@ -1184,22 +1200,6 @@ fileAdd = strcat(googleDriveLocalFolderAddress,'\',mouseNumber,'\',fileName);
 print(h,fileAdd,'-dpdf','-r0')
 
 
-%% updating the database for the animal
-
-Date = [Date, string(date)];
-weightYesterday = [weightYesterday, string(MouseWeight)];
-addWaterYesterday = [addWaterYesterday, string(addWater)];
-trainingStage = [trainingStage, string(stageOfTraining)];
-hitCount{end+1} = hitCounterPerContrast;  % add empty vectors for the days without data for this item
-stimCount{end+1} = StimCounterPerContrast;
-firstLickDist{end+1} = firstLickAfterStimDifferentContrastsToPlot;
-totalTodayReward = [totalTodayReward, earnedRewardVolTotal];
-FA_count = [FA_count, FA_counter];
-extendedStimCount = [extendedStimCount, extendedITT_trialsCounter];
-
-save(animalMatDataFileAdd,'Date','weightYesterday','addWaterYesterday','trainingStage','hitCount',...
-    'stimCount','firstLickDist','totalTodayReward',...
-    'mouseInitialWeight','FA_count','extendedStimCount','-append');
 
 
 %% generate the plots and replace on the google drive
@@ -1237,11 +1237,24 @@ for ContrastCounter=1:numberOfContrasts
     
     xticks(1:todayDayNoOfMultipleContrasts)
     
+    ylabel('Hit Rate (%)');
+    
     
 
 end
 
-legend('Contrast1','Contrast2','Contrast2','Contrast2','Contrast2')
+tempFA_Rate = [];
+
+for sessionCounter=1:todayDayNoOfMultipleContrasts
+        sessionInd = sessionID_multipleContrastsToInclude(sessionCounter);
+        tempFA_Rate(end+1) = (FA_count(sessionCounter))/(extendedStimCount(sessionCounter))*100;
+end
+p = plot(tempFA_Rate);
+p.Color = 'k';
+p.LineStyle = '--';
+p.Marker = 'o';
+
+legend('Contrast1','Contrast2','Contrast3','Contrast4','Contrast5','FA')
 
 sgtitle({strcat('#',mouseNumber), ' Performance Across Days'})
 
@@ -1275,6 +1288,7 @@ for ContrastCounter=1:numberOfContrasts
     end
     
     p = plot(tempDelayMean*1000);
+%     p = errorbar(tempDelayMean*1000,tempDelaySEM*1000);
     p.Color = colorVec(ContrastCounter);
     p.LineStyle = '--';
     p.Marker = 'o';
@@ -1293,8 +1307,13 @@ for ContrastCounter=1:numberOfContrasts
     xlim([0, todayDayNoOfMultipleContrasts+1])
     
     xticks(1:todayDayNoOfMultipleContrasts)
+    
+    ylabel('ms');
 
 end
+
+legend('Contrast1','Contrast2','Contrast3','Contrast4','Contrast5')
+
 sgtitle({strcat('#',mouseNumber), ' Response Delay Across Days'})
 
 set(h,'Units','Inches');
@@ -1309,4 +1328,3 @@ print(h,fileAdd,'-dpdf','-r0')
 %% Saving the variables of the session and the code file in the recording
 %directory
 save(dataFolderAdd + '\' + 'workspaceVariables');
-copyfile(string(mfilename('fullpath')) + '.m', dataFolderAdd);
