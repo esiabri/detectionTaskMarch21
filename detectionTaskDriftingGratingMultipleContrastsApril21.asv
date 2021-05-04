@@ -286,7 +286,7 @@ Screen('Flip', window);
 % rate is estimated based on premature licking during the last second of
 % waiting for the new trial
 
-contrastVector = [0.05, 0.1, 0.2, 0.4, 0.8];
+contrastVector = [0.025, 0.05, 0.1, 0.2, 0.4];%, 0.8];
 numberOfContrasts = size(contrastVector,2);
 
 numberOfTrialsPerContrast = round(totalTrialNo/numberOfContrasts);
@@ -432,7 +432,7 @@ while(1)
         vblAfterStimGrayTime = Screen('Flip', window, vblStim + (StimFrames - 0.5) * ifi);
         trialDigitalTagSession.outputSingleScan(0);
         
-        freeRewardCounter = freeRewardCounter + 1;
+        StimCounterWarmup = StimCounterWarmup + 1;
     end
     
                 
@@ -613,7 +613,7 @@ for trialNo=1:totalTrialNo
     
 %     propertiesMat = [phase, freq, sigma, contrast, aspectRatio, 0, 0, 0];
     
-    propertiesMat = [phase, freq, contrast, 0];
+    
 
     % ESC session if necessary 
     [keyIsDown, secs, keyCode, deltaSecs] = KbCheck();
@@ -627,6 +627,9 @@ for trialNo=1:totalTrialNo
     if (find(keyCode) == 82)  %Press r to show the stim and give a reward
             Screen('FillRect', window, gray);
             Screen('FillRect',window, white, patchRect);
+            
+            propertiesMat = [phase, freq, contrastVector(end), 0];
+            
             Screen('DrawTextures', window, gratingTex, [], righImageHorzPos+stimHeightOffset, orientationPreferred, [], [], [], [],...
             kPsychUseTextureMatrixForRotation, propertiesMat');
         
@@ -673,6 +676,7 @@ for trialNo=1:totalTrialNo
         
     end
     
+    propertiesMat = [phase, freq, contrast, 0];
     
     freeRewardVector = [freeRewardVector freeRewardFlag]; %to indicate the presented stimulus as the free reward
     freeRewardFlag = 0;
