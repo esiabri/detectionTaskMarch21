@@ -844,7 +844,7 @@ for trialNo=1:totalTrialNo
         
     end
     
-    freeRewardVector = [freeRewardVector 0]; % this presented stimulus has not been a free reward
+%     freeRewardVector = [freeRewardVector 0]; % this presented stimulus has not been a free reward
         
     disp(' ');
     
