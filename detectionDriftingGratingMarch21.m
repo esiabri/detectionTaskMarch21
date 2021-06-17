@@ -15,6 +15,7 @@ Screen('Preference', 'SkipSyncTests', 1);
 % FA
 
 localDirectory = 'D:\recordedData\Behavioral\Ehsan';
+googleDriveLocalFolderAddress = 'G:\My Drive\behavioralRestults';
 networkDirectory = 'Z:\recordedData\Behavioral\Ehsan'; %this is the address that the copy will be attempted at the end of the
 % of the session and also will be synced during the night with the hard
 % drive (in case the network is not valid)
@@ -820,7 +821,7 @@ histBins = (-windowStartBeforeStim:histStep:windowAfterStimStart)+histStep/2;
 
 h = figure();
 hist(stimLockedLickTimesAllTrials,histBins)
-title(strcat('distribution for the time of the all licks'));
+% title(strcat('distribution for the time of the all licks'));
 
 xlabel('time from stim start (seconds)');
 
@@ -848,7 +849,7 @@ h = figure();
 colorVec = ["#4569D3","#97D345","#D3C845","#D38145","#D34550"];
  
 bar(histCenters,histCounts,1,'FaceColor',colorVec(1),'EdgeColor','none');
-title(strcat('distribution for the time of the first lick'));
+% title(strcat('distribution for the time of the first lick'));
 
 xlabel('time from stim start (seconds)');
 
@@ -939,7 +940,7 @@ tempDelaySEM = [];
 for sessionCounter=1:todayDayNoOfDetection
     sessionInd = sessionID_detectionToInclude(sessionCounter);
 
-    firstLickTimes = cell2mat(firstLickDist{sessionInd});
+    firstLickTimes = firstLickDist{sessionInd};
     firstLickTimes = firstLickTimes(firstLickTimes<2.5);
 
     tempDelayMean(end+1) = mean(firstLickTimes);
