@@ -1220,7 +1220,7 @@ for ContrastCounter=1:numberOfContrasts
     
     for sessionCounter=1:todayDayNoOfMultipleContrasts
         sessionInd = sessionID_multipleContrastsToInclude(sessionCounter);
-        tempContrastHitRate(end+1) = (hitCount{sessionCounter}(ContrastCounter))/(stimCount{sessionCounter}(ContrastCounter))*100;
+        tempContrastHitRate(end+1) = (hitCount{sessionInd}(ContrastCounter))/(stimCount{sessionInd}(ContrastCounter))*100;
     end
     
     p = plot(tempContrastHitRate);
@@ -1251,7 +1251,7 @@ tempFA_Rate = [];
 
 for sessionCounter=1:todayDayNoOfMultipleContrasts
         sessionInd = sessionID_multipleContrastsToInclude(sessionCounter);
-        tempFA_Rate(end+1) = (FA_count(sessionCounter))/(extendedStimCount(sessionCounter))*100;
+        tempFA_Rate(end+1) = (FA_count(sessionInd))/(extendedStimCount(sessionInd))*100;
 end
 p = plot(tempFA_Rate);
 p.Color = 'k';
@@ -1283,7 +1283,7 @@ for ContrastCounter=1:numberOfContrasts
     for sessionCounter=1:todayDayNoOfMultipleContrasts
         sessionInd = sessionID_multipleContrastsToInclude(sessionCounter);
         
-        firstLickTimes = cell2mat(firstLickDist{sessionCounter}(ContrastCounter));
+        firstLickTimes = cell2mat(firstLickDist{sessionInd}(ContrastCounter));
         firstLickTimes = firstLickTimes(firstLickTimes<2.5);
         
         tempDelayMean(end+1) = mean(firstLickTimes);

@@ -834,7 +834,7 @@ tempContrastHitRate = [];
 
 for sessionCounter=1:todayDayNoOfReinforcement
     sessionInd = sessionID_reinforcementToInclude(sessionCounter);
-    tempContrastHitRate(end+1) = (hitCount{sessionInd})/(stimCount{sessionInd})*100;
+    tempContrastHitRate(end+1) = (hitCount{sessionCounter})/(stimCount{sessionCounter})*100;
 end
 
 p = plot(tempContrastHitRate);
@@ -861,9 +861,9 @@ ylabel('Hit Rate (%)');
 
 tempFA_Rate = [];
 
-for sessionCounter=1:todayDayNoOfReinforcement
+for sessionCounter=1:todayDayNoOfMultipleContrasts
         sessionInd = sessionID_reinforcementToInclude(sessionCounter);
-        tempFA_Rate(end+1) = (FA_count(sessionInd))/(extendedStimCount(sessionInd))*100;
+        tempFA_Rate(end+1) = (FA_count(sessionCounter))/(extendedStimCount(sessionCounter))*100;
 end
 p = plot(tempFA_Rate);
 p.Color = 'k';
@@ -885,43 +885,50 @@ print(h,fileAdd,'-dpdf','-r0')
 %% response delay change across days for different contrasts
 
 h = figure('Position', [50 50 600 1000]);
-hold on
-tempDelayMean = [];
-tempDelaySEM = [];
-
-for sessionCounter=1:todayDayNoOfReinforcement
-    sessionInd = sessionID_reinforcementToInclude(sessionCounter);
-
-    firstLickTimes = cell2mat(firstLickDist{sessionInd});
-    firstLickTimes = firstLickTimes(firstLickTimes<2.5);
-
-    tempDelayMean(end+1) = mean(firstLickTimes);
-    tempDelaySEM(end+1) = std(firstLickTimes)/sqrt(length(firstLickTimes));
+for ContrastCounter=1:numberOfContrasts
+%     
+%     subplot(numberOfContrasts,1,numberOfContrasts-ContrastCounter+1)
+    hold on
+    tempDelayMean = [];
+    tempDelaySEM = [];
+    
+    for sessionCounter=1:todayDayNoOfMultipleContrasts
+        sessionInd = sessionID_multipleContrastsToInclude(sessionCounter);
+        
+        firstLickTimes = cell2mat(firstLickDist{sessionCounter}(ContrastCounter));
+        firstLickTimes = firstLickTimes(firstLickTimes<2.5);
+        
+        tempDelayMean(end+1) = mean(firstLickTimes);
+        tempDelaySEM(end+1) = std(firstLickTimes)/sqrt(length(firstLickTimes));
+        
+    end
+    
+    p = plot(tempDelayMean*1000);
+%     p = errorbar(tempDelayMean*1000,tempDelaySEM*1000);
+    p.Color = colorVec(ContrastCounter);
+    p.LineStyle = '--';
+    p.Marker = 'o';
+    
+    
+    if ContrastCounter == 1
+        xlabel('day');
+    end
+    
+    ylabel('delay(ms)');
+    
+    yl = ylim;
+    
+%     text(0.5,(yl(1)+yl(2))/2,['Contrast',num2str(ContrastCounter)])
+    
+    xlim([0, todayDayNoOfMultipleContrasts+1])
+    
+    xticks(1:todayDayNoOfMultipleContrasts)
+    
+    ylabel('ms');
 
 end
 
-p = plot(tempDelayMean*1000);
-%     p = errorbar(tempDelayMean*1000,tempDelaySEM*1000);
-p.Color = colorVec(1);
-p.LineStyle = '--';
-p.Marker = 'o';
-
-
-
-xlabel('day');
-
-
-ylabel('delay(ms)');
-
-yl = ylim;
-
-%     text(0.5,(yl(1)+yl(2))/2,['Contrast',num2str(ContrastCounter)])
-
-xlim([0, todayDayNoOfReinforcement+1])
-
-xticks(1:todayDayNoOfReinforcement)
-
-ylabel('ms');
+legend('Contrast1','Contrast2','Contrast3','Contrast4','Contrast5')
 
 sgtitle({strcat('#',mouseNumber), ' Response Delay Across Days'})
 
@@ -929,7 +936,7 @@ set(h,'Units','Inches');
 pos = get(h,'Position');
 set(h,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
 
-fileName = 'ResponseDelayAcrossDays_Reinforcement';
+fileName = 'ResponseDelayAcrossDays_AllContrasts';
 fileAdd = strcat(googleDriveLocalFolderAddress,'\',mouseNumber,'\',fileName);
 print(h,fileAdd,'-dpdf','-r0')
 

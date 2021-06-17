@@ -272,7 +272,7 @@ Screen('Flip', window);
 
 %--------------------------------------------------------------------------
 %TRIAL PARAMETERS
-afterStimGrayTime = 3; %in sec
+afterStimGrayTime = 1; %in sec
 afterStimGrayFrames = round(afterStimGrayTime/ifi);
 
  
@@ -772,69 +772,215 @@ text(0.5*maxTimeToLookForTheFirstLick,yl(2)*0.75,['median delay: ',num2str(round
 
 hold on
 plot([0 StimDuration],[yl(2)*0.9 yl(2)*0.9],'k','linewidth',2)
-%% update the data base for the animal
-
-% load the data base for the animal
-defaultPath = 'D:\animalsMatFiles';
-
-animalMatDataFileAdd = strcat(defaultPath,'\',num2str(mouseNumber),'.mat');
-load(animalMatDataFileAdd)
+%% updating the database for the animal
 
 Date = [Date, string(date)];
 weightYesterday = [weightYesterday, string(MouseWeight)];
-addWaterYesterday = [addWaterYesterday, addWater];
+addWaterYesterday = [addWaterYesterday, string(addWater)];
 trainingStage = [trainingStage, string(stageOfTraining)];
-hitCountReinforceStatic = [hitCountReinforceStatic, []];  % add empty vectors for the days without data for this item
-stimCountReinforceStatic = [stimCountReinforceStatic, []];
-hitCountDetectionStatic = [hitCountDetectionStatic, []];
-stimCountDetectionStatic = [stimCountDetectionStatic, []];
-hitCountReinforceDrifting = [hitCountReinforceDrifting, hitCounter];
-stimCountReinforceDrifting = [stimCountReinforceDrifting, StimCounter];
-hitCountDetectionDrifting = [hitCountDetectionDrifting, []];
-stimCountDetectionDrifting = [stimCountDetectionDrifting, []];
-hitCountContrastLearningStatic = [hitCountContrastLearningStatic, []];
-stimCountContrastLearningStatic = [stimCountContrastLearningStatic, []];
-hitCountContrastLearningDrifting = [hitCountContrastLearningDrifting, []];
-stimCountContrastLearningDrifting = [stimCountContrastLearningDrifting, []];
-firstLickDistReinforceStatic = [firstLickDistReinforceStatic, []];
-firstLickDistDetectionStatic = [firstLickDistDetectionStatic, []];
-firstLickDistReinforceDrifting = [firstLickDistReinforceDrifting, firstLickAfterStimAllTrials];
-firstLickDistDetectionDrifting = [firstLickDistDetectionDrifting, []];
-firstLickDistContrastLearningStatic = [firstLickDistContrastLearningStatic, []];
-firstLickDistContrastLearningDrifting = [firstLickDistContrastLearningDrifting, []];
+hitCount{end+1} = hitCounter;  % add empty vectors for the days without data for this item
+stimCount{end+1} = StimCounter;
+firstLickDist{end+1} = firstLickAfterStimAllTrials;
 totalTodayReward = [totalTodayReward, earnedRewardVolTotal];
-FA_countReinforceStatic = [FA_countReinforceStatic,[]];
-FA_countDetectionStatic = [FA_countDetectionStatic,[]];
-FA_countReinforceDrifting = [FA_countReinforceDrifting, FA_counter];
-FA_countDetectionDrifting = [FA_countDetectionDrifting,[]];
-extendedStimCountReinforceStatic = [extendedStimCountReinforceStatic,[]];
-extendedStimCountDetectionStatic = [extendedStimCountDetectionStatic,[]];
-extendedStimCountReinforceDrifting = [extendedStimCountReinforceDrifting, extendedITT_trialsCounter];
-extendedStimCountDetectionDrifting = [extendedStimCountDetectionDrifting,[]];
+FA_count = [FA_count, FA_counter];
+extendedStimCount = [extendedStimCount, extendedITT_trialsCounter];
 
-save(animalMatDataFileAdd,'Date','weightYesterday','addWaterYesterday','trainingStage','hitCountReinforceStatic',...
-    'stimCountReinforceStatic','hitCountDetectionStatic','stimCountDetectionStatic',...
-    'hitCountReinforceDrifting','stimCountReinforceDrifting','hitCountDetectionDrifting','stimCountDetectionDrifting',...
-    'hitCountContrastLearningStatic','stimCountContrastLearningStatic','hitCountContrastLearningDrifting','stimCountContrastLearningDrifting',...
-    'firstLickDistReinforceStatic',...
-    'firstLickDistDetectionStatic','firstLickDistReinforceDrifting','firstLickDistDetectionDrifting',...
-    'firstLickDistContrastLearningStatic','firstLickDistContrastLearningDrifting','totalTodayReward',...
-    'mouseInitialWeight','FA_countReinforceStatic','FA_countDetectionStatic','FA_countReinforceDrifting',...
-    'FA_countDetectionDrifting','extendedStimCountReinforceStatic','extendedStimCountDetectionStatic',...
-    'extendedStimCountReinforceDrifting','extendedStimCountDetectionDrifting','-append');
+save(animalMatDataFileAdd,'Date','weightYesterday','addWaterYesterday','trainingStage','hitCount',...
+    'stimCount','firstLickDist','totalTodayReward',...
+    'mouseInitialWeight','FA_count','extendedStimCount','-append');
+
+%% determine the day number of detection
+
+sessionID_detection = find(trainingStage == "Detection");
+
+sessionID_detectionToInclude = []; %to exclude the extra sessions that should be ignored in
+
+for sessionCounter=1:length(sessionID_detection)
+    
+    sessionInd = sessionID_detection(sessionCounter);
+    
+    % check to see if there is any other sessions been recorded in this day
+    
+    sessionDateTemp = Date(sessionInd);
+    
+    sessionsIndInThisDay = find(Date == sessionDateTemp);
+    
+    if sessionInd == sessionsIndInThisDay(end) % just include the last session from this day
+        sessionID_detectionToInclude = [sessionID_detectionToInclude sessionInd];
+    end
+end
+    
+todayDayNoOfDetection = length(sessionID_detectionToInclude);
+
+%% distribution of all licks
+
+histStep = 0.05;
+windowStartBeforeStim = windowBeforeStimStart;
+histBins = (-windowStartBeforeStim:histStep:windowAfterStimStart)+histStep/2;
+
+h = figure();
+hist(stimLockedLickTimesAllTrials,histBins)
+title(strcat('distribution for the time of the all licks'));
+
+xlabel('time from stim start (seconds)');
+
+histStep = 0.05;
+windowStartBeforeStim = 1;
+windowAfterStimStart = maxTimeToLookForTheFirstLick;
+histBins = (-windowStartBeforeStim:histStep:windowAfterStimStart)+histStep/2;
 
 
+sgtitle({strcat('#',mouseNumber, ' Day', num2str(todayDayNoOfDetection)) ,string(date),...
+    'Distribution of All Lick Times across Trials'})
 
-% % load the saved file
-% 
-% [fileName,pathToFile] = uigetfile(defaultPath);
-% dataFileAdd = strcat(pathToFile,fileName);
-% 
-% load(dataFileAdd)
-% 
-% newVar = [];
-% save(dataFileAdd,'newVar','-append')
+set(h,'Units','Inches');
+pos = get(h,'Position');
+set(h,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
 
+fileName = strcat('allLicksDist_Day', num2str(todayDayNoOfDetection));
+fileAdd = strcat(googleDriveLocalFolderAddress,'\',mouseNumber,'\',fileName);
+print(h,fileAdd,'-dpdf','-r0')
+
+%% first lick distribution for different contrasts
+h = figure();
+[histCounts,histCenters] = hist(firstLickAfterStimAllTrials,histBins);
+
+colorVec = ["#4569D3","#97D345","#D3C845","#D38145","#D34550"];
+ 
+bar(histCenters,histCounts,1,'FaceColor',colorVec(1),'EdgeColor','none');
+title(strcat('distribution for the time of the first lick'));
+
+xlabel('time from stim start (seconds)');
+
+yl = ylim;
+text(0.5*maxTimeToLookForTheFirstLick,yl(2)*0.75,['median delay: ',num2str(round(1000*median(firstLickAfterStimAllTrials))),' ms'])
+
+hold on
+plot([0 StimDuration],[yl(2)*0.9 yl(2)*0.9],'k','linewidth',2)
+
+sgtitle({strcat('#',mouseNumber, ' Day', num2str(todayDayNoOfDetection)) ,string(date),...
+    'Distribution of First Lick Times across Trials'})
+
+set(h,'Units','Inches');
+pos = get(h,'Position');
+set(h,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
+
+fileName = strcat('firstLicksDist_Day', num2str(todayDayNoOfDetection));
+fileAdd = strcat(googleDriveLocalFolderAddress,'\',mouseNumber,'\',fileName);
+print(h,fileAdd,'-dpdf','-r0')
 
 
 %% generate the plots and replace on the google drive
+
+% performance change across days 
+
+h = figure('Position', [50 50 600 1000]);
+
+    
+tempContrastHitRate = [];
+
+for sessionCounter=1:todayDayNoOfDetection
+    sessionInd = sessionID_detectionToInclude(sessionCounter);
+    tempContrastHitRate(end+1) = (hitCount{sessionInd})/(stimCount{sessionInd})*100;
+end
+
+p = plot(tempContrastHitRate);
+p.Color = colorVec(1);
+p.LineStyle = '--';
+p.Marker = 'o';
+
+
+
+xlabel('day');
+
+
+yl = ylim;
+
+%     text(0.5,(yl(1)+yl(2))/2,['Contrast',num2str(ContrastCounter)])
+
+xlim([0, todayDayNoOfDetection+1])
+
+xticks(1:todayDayNoOfDetection)
+
+ylabel('Hit Rate (%)');
+    
+
+
+tempFA_Rate = [];
+
+for sessionCounter=1:todayDayNoOfDetection
+        sessionInd = sessionID_detectionToInclude(sessionCounter);
+        tempFA_Rate(end+1) = (FA_count(sessionInd))/(extendedStimCount(sessionInd))*100;
+end
+p = plot(tempFA_Rate);
+p.Color = 'k';
+p.LineStyle = '--';
+p.Marker = 'o';
+
+legend('Hit','FA')
+
+sgtitle({strcat('#',mouseNumber), ' Performance Across Days'})
+
+set(h,'Units','Inches');
+pos = get(h,'Position');
+set(h,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
+
+fileName = 'PerformanceAcrossDays_Detection';
+fileAdd = strcat(googleDriveLocalFolderAddress,'\',mouseNumber,'\',fileName);
+print(h,fileAdd,'-dpdf','-r0')
+
+%% response delay change across days for different contrasts
+
+h = figure('Position', [50 50 600 1000]);
+hold on
+tempDelayMean = [];
+tempDelaySEM = [];
+
+for sessionCounter=1:todayDayNoOfDetection
+    sessionInd = sessionID_detectionToInclude(sessionCounter);
+
+    firstLickTimes = cell2mat(firstLickDist{sessionInd});
+    firstLickTimes = firstLickTimes(firstLickTimes<2.5);
+
+    tempDelayMean(end+1) = mean(firstLickTimes);
+    tempDelaySEM(end+1) = std(firstLickTimes)/sqrt(length(firstLickTimes));
+
+end
+
+p = plot(tempDelayMean*1000);
+%     p = errorbar(tempDelayMean*1000,tempDelaySEM*1000);
+p.Color = colorVec(1);
+p.LineStyle = '--';
+p.Marker = 'o';
+
+
+
+xlabel('day');
+
+
+ylabel('delay(ms)');
+
+yl = ylim;
+
+%     text(0.5,(yl(1)+yl(2))/2,['Contrast',num2str(ContrastCounter)])
+
+xlim([0, todayDayNoOfDetection+1])
+
+xticks(1:todayDayNoOfDetection)
+
+ylabel('ms');
+
+sgtitle({strcat('#',mouseNumber), ' Response Delay Across Days'})
+
+set(h,'Units','Inches');
+pos = get(h,'Position');
+set(h,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
+
+fileName = 'ResponseDelayAcrossDays_Detection';
+fileAdd = strcat(googleDriveLocalFolderAddress,'\',mouseNumber,'\',fileName);
+print(h,fileAdd,'-dpdf','-r0')
+
+
+%% Saving the variables of the session and the code file in the recording
+%directory
+save(dataFolderAdd + '\' + 'workspaceVariables');
