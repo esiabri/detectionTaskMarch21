@@ -214,7 +214,7 @@ phase = 0;
 temporalFreq = 2;
 degPerSec = 360 * temporalFreq;
 degPerFrame =  degPerSec * ifi;
-phaseLine = 0;
+phase = 0;
 
 % Numer of frames to wait before re-drawing
 waitframes = 1;
@@ -334,7 +334,7 @@ for trialNo=1:totalTrialNo
 % Water will be delivered if the mice stop licking for 10 consecutive trials    
     
     
-    phase = 360*rand;
+%     phase = 360*rand;
     phase = 0;
     allPhases = [allPhases phase];
     propertiesMat = [phase, freq, sigma, contrast, aspectRatio, 0, 0, 0];
@@ -365,8 +365,8 @@ for trialNo=1:totalTrialNo
 
                 % calculating the phase of the grating in this frame based on the
                 % temporal frequency
-                phaseLine = phaseLine + degPerFrame;
-                propertiesMat(:, 1) = phaseLine';
+                phase = phase + degPerFrame;
+                propertiesMat(:, 1) = phase';
 
                 % loading the next frame
                 Screen('FillRect', window, gray);
@@ -479,8 +479,8 @@ for trialNo=1:totalTrialNo
 
         % calculating the phase of the grating in this frame based on the
         % temporal frequency
-        phaseLine = phaseLine + degPerFrame;
-        propertiesMat(:, 1) = phaseLine';
+        phase = phase + degPerFrame;
+        propertiesMat(:, 1) = phase';
 
         % loading the next frame
         Screen('FillRect', window, gray);
@@ -934,7 +934,7 @@ print(h,fileAdd,'-dpdf','-r0')
 
 h = figure('Position', [50 50 600 1000]);
 hold on
-tempDelayMean = [];
+tempDelayMedian = [];
 tempDelaySEM = [];
 
 for sessionCounter=1:todayDayNoOfDetection
@@ -943,12 +943,12 @@ for sessionCounter=1:todayDayNoOfDetection
     firstLickTimes = firstLickDist{sessionInd};
     firstLickTimes = firstLickTimes(firstLickTimes<2.5);
 
-    tempDelayMean(end+1) = mean(firstLickTimes);
+    tempDelayMedian(end+1) = median(firstLickTimes);
     tempDelaySEM(end+1) = std(firstLickTimes)/sqrt(length(firstLickTimes));
 
 end
 
-p = plot(tempDelayMean*1000);
+p = plot(tempDelayMedian*1000);
 %     p = errorbar(tempDelayMean*1000,tempDelaySEM*1000);
 p.Color = colorVec(1);
 p.LineStyle = '--';

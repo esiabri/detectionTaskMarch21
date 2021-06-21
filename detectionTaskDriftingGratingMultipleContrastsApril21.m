@@ -216,7 +216,7 @@ phase = 0;
 temporalFreq = 2;
 degPerSec = 360 * temporalFreq;
 degPerFrame =  degPerSec * ifi;
-phaseLine = 0;
+phase = 0;
 
 % Numer of frames to wait before re-drawing
 waitframes = 1;
@@ -406,8 +406,8 @@ while(1)
 
             % calculating the phase of the grating in this frame based on the
             % temporal frequency
-            phaseLine = phaseLine + degPerFrame;
-            propertiesMat(:, 1) = phaseLine';
+            phase = phase + degPerFrame;
+            propertiesMat(:, 1) = phase';
 
             % loading the next frame
             Screen('FillRect', window, gray);
@@ -500,8 +500,8 @@ while(1)
 
         % calculating the phase of the grating in this frame based on the
         % temporal frequency
-        phaseLine = phaseLine + degPerFrame;
-        propertiesMat(:, 1) = phaseLine';
+        phase = phase + degPerFrame;
+        propertiesMat(:, 1) = phase';
 
         % loading the next frame
         Screen('FillRect', window, gray);
@@ -644,8 +644,8 @@ for trialNo=1:totalTrialNo
 
                 % calculating the phase of the grating in this frame based on the
                 % temporal frequency
-                phaseLine = phaseLine + degPerFrame;
-                propertiesMat(:, 1) = phaseLine';
+                phase = phase + degPerFrame;
+                propertiesMat(:, 1) = phase';
 
                 % loading the next frame
                 Screen('FillRect', window, gray);
@@ -762,8 +762,8 @@ for trialNo=1:totalTrialNo
 
         % calculating the phase of the grating in this frame based on the
         % temporal frequency
-        phaseLine = phaseLine + degPerFrame;
-        propertiesMat(:, 1) = phaseLine';
+        phase = phase + degPerFrame;
+        propertiesMat(:, 1) = phase';
 
         % loading the next frame
         Screen('FillRect', window, gray);
@@ -1277,7 +1277,7 @@ for ContrastCounter=1:numberOfContrasts
 %     
 %     subplot(numberOfContrasts,1,numberOfContrasts-ContrastCounter+1)
     hold on
-    tempDelayMean = [];
+    tempDelayMedian = [];
     tempDelaySEM = [];
     
     for sessionCounter=1:todayDayNoOfMultipleContrasts
@@ -1286,12 +1286,12 @@ for ContrastCounter=1:numberOfContrasts
         firstLickTimes = cell2mat(firstLickDist{sessionInd}(ContrastCounter));
         firstLickTimes = firstLickTimes(firstLickTimes<2.5);
         
-        tempDelayMean(end+1) = mean(firstLickTimes);
+        tempDelayMedian(end+1) = median(firstLickTimes);
         tempDelaySEM(end+1) = std(firstLickTimes)/sqrt(length(firstLickTimes));
         
     end
     
-    p = plot(tempDelayMean*1000);
+    p = plot(tempDelayMedian*1000);
 %     p = errorbar(tempDelayMean*1000,tempDelaySEM*1000);
     p.Color = colorVec(ContrastCounter);
     p.LineStyle = '--';
