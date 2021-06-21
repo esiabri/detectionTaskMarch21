@@ -440,7 +440,7 @@ for trialNo=1:totalTrialNo
 
         % loading the next frame
         Screen('FillRect', window, gray);
-        Screen('FillRect',window, black, patchRect);
+        Screen('FillRect',window, white, patchRect);
         Screen('DrawTextures', window, gabortex, [], righImageHorzPos+stimHeightOffset, orientationPreferred, [], [], [], [],...
                 kPsychDontDoRotation, propertiesMat');
 
