@@ -327,6 +327,8 @@ deliverRewardMarch21(earnedRewardVol,syringeVol,rewardStepMotorCtl1);
 
 %% Session Trials
 
+disp('');
+disp('press any key to start the session');
 KbWait;
 startRecTime = GetSecs();
 
@@ -775,6 +777,12 @@ hold on
 plot([0 StimDuration],[yl(2)*0.9 yl(2)*0.9],'k','linewidth',2)
 %% updating the database for the animal
 
+% load the data base for the animal
+defaultPath = 'D:\animalsMatFiles';
+
+animalMatDataFileAdd = strcat(defaultPath,'\',num2str(mouseNumber),'.mat');
+load(animalMatDataFileAdd)
+
 Date = [Date, string(date)];
 weightYesterday = [weightYesterday, string(MouseWeight)];
 addWaterYesterday = [addWaterYesterday, string(addWater)];
@@ -905,7 +913,7 @@ xticks(1:todayDayNoOfDetection)
 
 ylabel('Hit Rate (%)');
     
-
+hold on
 
 tempFA_Rate = [];
 

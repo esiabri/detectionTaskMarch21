@@ -317,8 +317,6 @@ rewardCompRate = 1.2;
 minLickContact = 0.05;
 
 
-noLickDurBeforeStim = 2; % in sec
-
 %% stimVector
 % here we want to build a stim vector with 5 or 6 s ITI trials
 % 5s ITI: normal trials, encoded with 1
